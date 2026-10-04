@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.ico">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grino #27 · Solar on the roof, safe voltage at home</title>
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="deck.css">
+</head>
+<body data-screen="s1">
+<div id="viewport">
+  <div id="stage">
+
+    <!-- persistent street scene (S2 + S5), drawn by street.js -->
+    <div id="street" aria-hidden="true"></div>
+
+    <!-- ============ S1 · Cover (organisers' template: 27 · project name · one sentence · PRESENTER · TEAM · partner plate) ============ -->
+    <section class="slide light" data-id="s1" aria-label="Cover">
+      <div class="cv-num">27</div>
+      <div class="cv-chips"><span class="cv-chip" id="cvTrack">Smart Grid</span><span class="cv-chip" id="cvTeam">Team “Grino”</span></div>
+      <h1 class="cv-title" id="cvTitle">Solar on the roof. Safe voltage at home.</h1>
+      <div class="cv-rule"></div>
+      <p class="cv-desc" id="cvDesc">At noon, rooftop solar pushes street voltage past the legal limit — appliances break and inverters shut down. A small box at the inverter keeps the home safe and the panels working.</p>
+      <div class="cv-label cv-l1">PRESENTER</div>
+      <div class="cv-name cv-n1" id="cvPresenter">Radik Grigoryan</div>
+      <div class="cv-label cv-l2">TEAM</div>
+      <div class="cv-name cv-n2" id="cvTeamNames">Mikayel Sarkisyan, Vitaliy Sukhoplechev, Zakhar Shcherbakov, Ara Galstyan</div>
+    </section>
+
+    <!-- ============ S2 · Street at noon ============ -->
+    <section class="slide scene" data-id="s2" aria-label="Street at noon">
+      <div class="scene-hl">
+        <div class="kicker a" style="--d:.1s">An ordinary Armenian street</div>
+        <h2 class="hl sun-hl a" style="--d:.2s" id="s2Hl">Morning: voltage is normal</h2>
+      </div>
+      <div class="src a" style="--d:.6s">Model of a typical village street · legal limit 242 V</div>
+    </section>
+
+    <!-- ============ S3 · The numbers: one at a time ============ -->
+    <section class="slide dark" data-id="s3" aria-label="The numbers">
+      <div class="kicker a" style="--d:.05s">Armenia today</div>
+      <h2 class="hl hl-s a" style="--d:.12s">This is not a theory.</h2>
+      <div class="s3-past" id="s3Past"></div>
+      <div class="beat b1" data-at="0.3" data-short="~59,000|solar plants">
+        <div class="big-num grad-sun"><span class="tilde">~</span><span class="count" data-to="59000" data-fmt="int">59,000</span></div>
+        <div class="bcap">solar plants on ENA’s grid</div>
+      </div>
+      <div class="beat b2" data-at="5.5" data-short="≈ 1 in 3|customers over the limit (expert estimate)">
+        <div class="houses" id="houses100" aria-hidden="true"></div>
+        <div class="b2-txt">
+          <div class="big-num grad-red" id="s3Big">≈ 1 in 3</div>
+          <div class="s3-pct" id="s3Pct">36%</div>
+          <div class="bcap" id="s3Cap">customers get over&#8209;voltage</div>
+          <div class="s3-foot" id="s3Foot">industry expert estimate</div>
+        </div>
+        <div class="s3-reg"><b>150,000 customers</b> got &gt; 242 V in June — regulator’s data.</div>
+      </div>
+      <div class="beat b3" data-at="10.5" data-short="3,913|damage claims">
+        <div class="big-num"><span class="count" data-to="3913" data-fmt="int">3,913</span></div>
+        <div class="bcap">claims for appliances damaged by poor power quality in 2025</div>
+        <div class="b3-day">≈ 11 every day</div>
+        <div class="bsub">a quarter of all complaints</div>
+      </div>
+      <div id="s3BarsWrap" hidden><div class="bars-cap">Regulator's data (lower bound)</div><div class="bars" id="ovBars"></div></div>
+      <div class="src">Sources: ENA via Armenpress, 03.09.2026 · share of customers with over-voltage: industry expert estimate, 03.10.2026 · customers over 242 V in June: PSRC voltage data · PSRC quarterly complaint reports on ENA, 2025 (3,913 of 15,453; per day = ÷ 365)</div>
+    </section>
+
+    <!-- ============ S4 · Nobody controls inverters ============ -->
+    <section class="slide dark" data-id="s4" aria-label="Why it is not fixed">
+      <div class="kicker a" style="--d:.05s">Why it is not fixed</div>
+      <h2 class="hl hl-s a" style="--d:.12s">Nobody controls home inverters.</h2>
+      <div class="s4-am card a" style="--d:.25s">
+        <div class="cc"><svg class="flag" viewBox="0 0 72 48"><rect width="72" height="16" fill="#D90012"/><rect y="16" width="72" height="16" fill="#0033A0"/><rect y="32" width="72" height="16" fill="#F2A800"/></svg>Armenia</div>
+        <svg class="inv-ill" viewBox="0 0 460 280" aria-hidden="true">
+          <rect x="30" y="50" width="140" height="180" rx="16" fill="#E7E4DD"/>
+          <rect x="52" y="76" width="96" height="44" rx="6" fill="#2A332E"/>
+          <rect x="60" y="190" width="80" height="10" rx="5" fill="#aab4af"/>
+          <text x="100" y="262" text-anchor="middle" class="inv-cap">home inverter</text>
+          <path d="M180 140 H330" stroke="rgba(255,255,255,.35)" stroke-width="5" stroke-dasharray="6 10" stroke-linecap="round"/>
+          <circle cx="255" cy="140" r="30" fill="#2a1612" stroke="#D55E00" stroke-width="5"/>
+          <path d="M241 126 l28 28 M269 126 l-28 28" stroke="#FF8A57" stroke-width="6" stroke-linecap="round"/>
+          <g fill="none" stroke="#cfd8d4" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M360 230 L385 60 L410 230 M368 175 H402 M374 120 H396 M362 230 L400 120 M408 230 L370 120"/><path d="M350 75 H420"/>
+          </g>
+          <text x="385" y="262" text-anchor="middle" class="inv-cap">grid company</text>
+        </svg>
+        <div class="state bad">No such requirement in the grid rules yet</div>
+      </div>
+      <div class="s4-list">
+        <div class="row-c a" style="--d:.45s"><svg class="flag" viewBox="0 0 72 48"><rect width="72" height="48" fill="#DE2910"/><g fill="#FFDE00"><path d="M12 6l2.6 8h8.4l-6.8 5 2.6 8-6.8-5-6.8 5 2.6-8-6.8-5h8.4z"/><circle cx="26" cy="5" r="1.8"/><circle cx="30" cy="10" r="1.8"/><circle cx="30" cy="17" r="1.8"/><circle cx="26" cy="22" r="1.8"/></g></svg><div><b>China</b><span>must be controllable, from 2026</span></div><span class="ok" aria-label="required">✓</span></div>
+        <div class="row-c a" style="--d:.6s"><svg class="flag" viewBox="0 0 72 48"><rect width="72" height="16" fill="#111"/><rect y="16" width="72" height="16" fill="#DD0000"/><rect y="32" width="72" height="16" fill="#FFCE00"/></svg><div><b>Germany</b><span>VDE-AR-N 4105: inverters must help control voltage</span></div><span class="ok" aria-label="required">✓</span></div>
+        <div class="row-c a" style="--d:.75s"><svg class="flag" viewBox="0 0 72 48"><rect width="72" height="48" fill="#012169"/><g><path d="M0 0L36 24M36 0L0 24" stroke="#fff" stroke-width="5"/><path d="M0 0L36 24M36 0L0 24" stroke="#C8102E" stroke-width="2"/><path d="M18 0v24M0 12h36" stroke="#fff" stroke-width="7"/><path d="M18 0v24M0 12h36" stroke="#C8102E" stroke-width="4"/></g><g fill="#fff"><circle cx="18" cy="37" r="4.5"/><circle cx="54" cy="10" r="2.6"/><circle cx="47" cy="22" r="2.6"/><circle cx="61" cy="20" r="2.6"/><circle cx="54" cy="40" r="2.8"/><circle cx="57" cy="29" r="1.6"/></g></svg><div><b>Australia</b><span>voltage control mandatory</span></div><span class="ok" aria-label="required">✓</span></div>
+      </div>
+      <div class="src">Sources: NEA (China) 2025 No. 7 — new distributed solar "observable, measurable, adjustable, controllable" from 01.01.2026 · VDE-AR-N 4105 (Germany) · AS/NZS 4777.2:2020 (Australia)</div>
+    </section>
+
+    <!-- ============ S5 · SunGuard (scene overlay) ============ -->
+    <section class="slide scene" data-id="s5" aria-label="SunGuard">
+      <div class="scene-hl">
+        <div class="kicker a" style="--d:.1s">SunGuard · one box per home</div>
+        <h2 class="hl sun-hl a" style="--d:.2s" id="s5Hl">Helps from the very first home.</h2>
+      </div>
+      <ol class="s5-points">
+        <li class="rv"><b>Watches the voltage</b> every second at your panel.</li>
+        <li class="rv"><b>Keeps your inverter running</b> — switches on its own voltage control and eases power down instead of shutting down.</li>
+        <li class="rv"><b>On your phone</b> — over home Wi-Fi: live voltage, alerts and a log for ENA.</li>
+      </ol>
+      <div class="s5-more" id="s5Stage">No more emergency shutdowns · panels keep working</div>
+      <div class="s5-dcap">Line D: <b>255 V</b> → inverter shuts down → <b>245 V</b> → restarts → <b>255 V</b> …  <i>(animation sped up)</i></div>
+      <div class="s5-net a" style="--d:.5s">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 26 24 12l16 14"/><path d="M12 23v15h24V23"/><path d="M19 31a7 7 0 0 1 10 0" /><circle cx="24" cy="34" r="1.6" fill="currentColor"/></g></svg>
+        <span>home Wi-Fi → app</span>
+      </div>
+      <div class="src a" style="--d:.6s">Model of a village block: one transformer, several lines · legal limit 242 V · inverter emergency shutdown above 253 V (EN 50549-1)</div>
+    </section>
+
+    <!-- ============ S6 · Map of problem lines ============ -->
+    <section class="slide dark" data-id="s6" aria-label="Where the problem lines are">
+      <div class="kicker a" style="--d:.05s">Where the problem lines are</div>
+      <h2 class="hl hl-s a" style="--d:.12s">2,614 lines go over the limit only at noon.</h2>
+      <div class="s6-map a" style="--d:.2s"><svg id="marzMap" viewBox="-20 -20 1040 1050" aria-label="Map of Armenia: solar problem lines per 10,000 customers by marz"></svg></div>
+      <div class="s6-total a" style="--d:.4s">
+        <div class="big-num grad-sun"><span class="count" data-to="2614" data-fmt="int">2,614</span></div>
+        <div class="bcap">problem lines (noon only)</div>
+        <div class="s6-key"><b>36.9</b> = problem lines per 10,000 customers<br><span>1,528</span> = problem lines in the marz</div>
+        <div class="s6-note">Noon-only over-voltage points to rooftop solar; lines that are also high at night need the transformer setting fixed first.</div>
+      </div>
+      <div class="src">PSRC voltage data, June and December 2026/2025; customers: PSRC 2025</div>
+    </section>
+
+    <!-- ============ S6b · Cheapest fix first ============ -->
+    <section class="slide dark" data-id="s6b" aria-label="The economics of one box">
+      <div class="kicker a" style="--d:.05s">Business model</div>
+      <h2 class="hl hl-s a" style="--d:.12s">The economics of one box.</h2>
+      <div class="eco eco-l">
+        <div class="eco-h rv">Unit economics</div>
+        <div class="eco-r rv"><span>Parts</span><b>≈ $30</b></div>
+        <div class="eco-r rv"><span>Assembly, testing, certification <i class="asm">assumption</i></span><b>≈ $12</b></div>
+        <div class="eco-r rv"><span>Price to the home, incl. VAT <i class="asm">assumption</i></span><b>$79</b></div>
+        <div class="eco-r rv hot"><span>Margin after VAT</span><b>≈ 36%</b></div>
+      </div>
+      <div class="eco eco-r2">
+        <div class="eco-h rv">Market</div>
+        <div class="eco-r rv"><span>Solar plants today <i class="srcs">ENA, Sept 2026</i></span><b>~59,000</b></div>
+        <div class="eco-r rv"><span>New in 2025 <i class="srcs">PSRC</i></span><b>18,810</b></div>
+        <div class="eco-r rv"><span>Year 1: 5% of today’s plants</span><b>≈ 3,000 boxes ≈ $0.24 M</b></div>
+        <div class="eco-r rv hot"><span>By year 3 (cumulative): 20% of today’s plants + 10% of new ones</span><b>≈ 16,000 boxes ≈ $1.3 M</b></div>
+      </div>
+      <div class="eco-later rv">Whole Armenia: ≈ $4.7 M once + ≈ $1–1.5 M a year; next: Georgia, Uzbekistan.</div>
+      <div class="src">Price, costs, adoption: assumptions. Plants and growth: ENA, PSRC.</div>
+    </section>
+
+    <!-- ============ S7 · Live demo (the calculator lives outside the stage) ============ -->
+    <section class="slide dark" data-id="s7" aria-label="Live demo">
+      <div class="kicker">Live demo</div>
+      <div class="s7-line rv"><div class="s7-big">A real line from the regulator’s data</div><div class="s7-sub" id="s7Line">Gyumri · transformer 4661 · 334 homes</div></div>
+      <div class="s7-pv rv"><span class="s7-cap">Rooftop solar on it:</span> <b><span id="s7Pv">300</span> kW</b> <span class="s7-asm">(assumed)</span></div>
+      <div class="s7-noon rv"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="9" fill="#FFD27A"/><g stroke="#FFD27A" stroke-width="3" stroke-linecap="round"><path d="M24 4v6M24 38v6M4 24h6M38 24h6M10 10l4 4M34 34l4 4M38 10l-4 4M14 34l-4 4"/></g></svg><span>A clear June day, noon</span></div>
+      <table class="s7t rv" id="s7Table">
+        <thead><tr><th></th><th>Today</th><th class="fx" id="s7FixH">Cheapest fix<small>(transformer tap)</small></th></tr></thead>
+        <tbody>
+          <tr><td>Hours over the limit, per day</td><td class="bad" id="s7H0">7</td><td class="fx good" id="s7H1">0</td></tr>
+          <tr><td>Highest voltage</td><td class="bad" id="s7V0">249 V</td><td class="fx good" id="s7V1">238 V</td></tr>
+          <tr><td>Solar this line can take</td><td id="s7C0">205 kW</td><td class="fx good" id="s7C1">354 kW</td></tr>
+        </tbody>
+      </table>
+      <div class="s7-concl rv" id="s7Concl">Our map finds the line; ENA adjusts the transformer: 0 hours over the limit and 1.7× more solar on the same wires.</div>
+      <div class="src">Model of this line with average assumptions (length, wire, transformer); homes on the line: PSRC open data.</div>
+    </section>
+
+    <!-- ============ S8 · Under $50 of parts ============ -->
+    <section class="slide dark" data-id="s8" aria-label="Under $50 of parts">
+      <div class="kicker a" style="--d:.05s">SunGuard box</div>
+      <h2 class="hl hl-s a" style="--d:.12s">Under $50 of parts.</h2>
+      <div class="s8-ill" id="boxIll"></div>
+      <div class="s8-3d" id="parts3d" hidden></div>
+      <div class="s8-cap" id="partsCap" hidden></div>
+      <div class="s8-price">
+        <div class="big-num grad-sun price">≈ $<span class="count" data-to="30" data-fmt="int">30</span></div>
+        <div class="amd">11,000 AMD</div>
+        <div class="bcap">parts for one box, shop prices in Yerevan</div>
+        <div class="lic">Wi-Fi version: home network → internet → our server</div>
+      </div>
+      <div class="src">Sources: ChipDip.am retail prices of the parts, 03.10.2026 (≈ $30, 11,000 AMD)</div>
+    </section>
+
+    <!-- ============ S9 · Business & market ============ -->
+    <section class="slide dark" data-id="s9" aria-label="Who buys it">
+      <div class="kicker a" style="--d:.05s">Customers</div>
+      <h2 class="hl hl-s a" style="--d:.12s">Who buys it — and why.</h2>
+      <div class="s9-cards">
+        <div class="card buy a" style="--d:.3s"><div class="bn">1</div><b>Solar homes at the end of long lines</b>
+          <p>On the 2,614 problem lines.</p>
+          <p><em>Why:</em> the inverter shuts down at noon, the panels stop producing.</p>
+          <p><em>Gets:</em> panels that keep working, a voltage log for ENA claims.</p>
+          <p class="pay"><b>Pays: $79 once.</b></p></div>
+        <div class="card buy a" style="--d:.5s"><div class="bn">2</div><b>Solar installers</b>
+          <p>~19,000 new plants in 2025.</p>
+          <p><em>Why:</em> fewer “my panels switch off at noon” call-backs, a better offer.</p>
+          <p class="pay"><b>Sells it with new plants.</b></p></div>
+        <div class="card buy later a" style="--d:.7s"><div class="bn">3</div><b>Later: ENA</b>
+          <p><em>Why:</em> a live map of problem lines without buying new meters.</p>
+          <p class="pay"><b>Pays: for the data.</b></p></div>
+      </div>
+      <div class="s9-alt a" style="--d:.9s">Alternatives today: the installer sets voltage control once (our first advice — where it is enough, no box is needed); the inverter’s app (sees one inverter, after it trips); a plain voltage relay (no control, no data).</div>
+      <div class="src">Price $79: assumption · new plants: PSRC 2025 · problem lines: PSRC voltage data</div>
+    </section>
+
+    <!-- ============ S10 · Built in 24 hours ============ -->
+    <section class="slide dark" data-id="s10" aria-label="24 hours, three pivots">
+      <div class="kicker a" style="--d:.05s">What it took</div>
+      <h2 class="hl hl-s a" style="--d:.12s">24 hours, three pivots.</h2>
+      <ul class="took">
+        <li class="a" style="--d:.25s"><b>7 ideas tested — and dropped, with reasons</b><span>batteries, automatic line switching, phase balancer, selling noon surplus, dynamic tariffs, sensors in every substation, long-range radio — all listed on our research site</span></li>
+        <li class="a" style="--d:.4s"><b>820,000+ rows of the regulator’s data</b> read → <b>2,614 problem lines</b> found</li>
+        <li class="a" style="--d:.55s"><b>Armenian law checked:</b> radio bands, net metering, grid rules → the design changed twice (radio → Wi-Fi)</li>
+        <li class="a" style="--d:.7s"><b>A grid model and a calculator</b> for 400 real lines, cross-checked to 0.1 V</li>
+        <li class="a" style="--d:.85s"><b>Three pivots after mentor feedback:</b> software for ENA → a box for problem streets → a box for every home, over Wi-Fi</li>
+        <li class="a" style="--d:1s"><b>The box designed</b> with Yerevan prices: ≈ $30 of parts</li>
+      </ul>
+    </section>
+
+    <!-- ============ S10b · What works today ============ -->
+    <section class="slide dark" data-id="s10b" aria-label="What works today">
+      <div class="kicker a" style="--d:.05s">Status</div>
+      <h2 class="hl hl-s a" style="--d:.12s">What works today.</h2>
+      <div class="st3">
+        <div class="stc ok a" style="--d:.25s"><h3>Works today</h3><ul><li>Data analysis of the regulator’s files</li><li>Grid model</li><li>Calculator for 400 real lines</li><li>This 3D presentation</li></ul></div>
+        <div class="stc plan a" style="--d:.4s"><h3>Designed, not built yet</h3><ul><li>The box (parts list, logic, Yerevan prices)</li><li>Inverter link (Modbus — brand by brand)</li></ul></div>
+        <div class="stc safe a" style="--d:.55s"><h3>Safe by design</h3><ul><li>Control stays local; the cloud only reads</li><li>Owner’s consent for any data sharing</li><li>Every power limit has a revert timer</li><li>Libraries: three.js, pandapower, qrcode.js (open source)</li></ul></div>
+      </div>
+      <div class="st-git a" style="--d:.7s"><div class="qr-git" id="qrGit"></div><div>Code and data: <b>github.com/vitasha10/grino-smart-grid</b></div></div>
+    </section>
+
+    <!-- ============ S11 · Team & ask ============ -->
+    <section class="slide dark" data-id="s11" aria-label="Team and ask">
+      <div class="kicker a" style="--d:.05s">Team “Grino” · #27</div>
+      <h2 class="hl hl-s a" style="--d:.12s">Help us turn the first street green.</h2>
+      <ol class="ask2">
+        <li class="a" style="--d:.3s"><div><b>50 solar homes</b> on 3 problem lines for a pilot <span>— Kars branch (Shirak)</span></div></li>
+        <li class="a" style="--d:.45s"><div><b>2 solar installers</b> to fit the boxes</div></li>
+        <li class="a" style="--d:.6s"><div><b>ENA meter data</b> for those lines — to prove the effect</div></li>
+      </ol>
+      <div class="s11-team a" style="--d:.8s"><div class="names" id="teamNames"></div></div>
+      <div class="s11-qr a" style="--d:.5s">
+        <div class="qr-box" id="qrSmall"></div>
+        <div class="qr-cap">Full research</div>
+        <div class="qr-scan">Scan me</div>
+      </div>
+    </section>
+
+    <!-- organisers' partner plate: on every slide, same size and position as on the cover -->
+    <div id="plate" aria-hidden="true">
+      <div class="plate-strip"></div>
+      <img class="pl-gta" src="assets/gta_logo.png" alt="">
+      <p class="pl-foot">The GreenTech Academy program is implemented by the Union of Advanced Technology Enterprises (UATE) within the framework of the<br>"Sustainable Energy for Climate Resilient Municipal Development in Armenia" (SE4Resilience) project, co- financed by the European Union and the<br>Federal Ministry for Economic Cooperation and Development (BMZ) and implemented by the Deutsche Gesellschaft für Internationale<br>Zusammenarbeit (GIZ) GmbH.</p>
+      <img class="pl-partners" src="assets/partners_footer.png" alt="">
+    </div>
+  </div>
+</div>
+
+<!-- S7 calculator: real-viewport layer (not scaled) so it stays usable -->
+<div id="calcLayer" aria-hidden="true">
+  <div class="calc-head"><span class="ch-k">Live demo</span><span class="ch-t">a real line · regulator’s open data</span><span class="ch-x" id="calcX">more solar on the same wires</span></div>
+  <div class="calc-frame-wrap"><iframe id="calcFrame" title="Line voltage calculator" loading="eager"></iframe><div id="spot"><div class="sb"></div><div class="st"><span class="n"></span><span class="t"></span></div></div></div>
+</div>
+
+<!-- QR overlay (Q) -->
+<div id="qrOverlay" aria-hidden="true"><div class="qo-card"><div id="qrBig"></div><div class="qo-t">Full research</div><div class="qo-u" id="qrBigUrl"></div></div></div>
+
+<!-- help overlay (?) -->
+<div id="help" aria-hidden="true">
+  <div class="help-card">
+    <h3>Keyboard</h3>
+    <dl>
+      <dt>→ PgDn Space</dt><dd>next</dd><dt>← PgUp</dt><dd>previous</dd><dt>↑ ↓</dt><dd>S2/S5: sun (press = one step, hold = glide); elsewhere previous / next</dd>
+      <dt>Home / End</dt><dd>first / last</dd><dt>1…9, 0</dt><dd>screen 1…9, 10</dd>
+      <dt>S / W</dt><dd>sun up / down (hold)</dd><dt>N</dt><dd>sweep sun to noon</dd>
+      <dt>G</dt><dd>S5: SunGuard on the left line on/off</dd><dt>+ / −</dt><dd>S5: SunGuard on the next line / remove all</dd><dt>[ ]</dt><dd>previous / next state (S3 numbers, S5 points, S6b rows, S7 callouts)</dd>
+      <dt>Shift+R</dt><dd>reset everything (S1, dawn, no boxes, default calculator)</dd>
+      <dt>X</dt><dd>S7: cheapest fix on/off</dd><dt>Shift+A</dt><dd>autopilot 3:00 on/off</dd><dt>V</dt><dd>3D: reset the view (drag with the mouse to rotate)</dd>
+      <dt>Q</dt><dd>big QR</dd><dt>F</dt><dd>fullscreen</dd>
+      <dt>B or .</dt><dd>black screen</dd><dt>H</dt><dd>status dot on/off</dd><dt>Shift+/ (?)</dt><dd>this help</dd>
+    </dl>
+    <h3>Remote</h3>
+    <p id="helpRemote"></p>
+  </div>
+</div>
+
+<div id="blackout"></div>
+<div id="status" title="remote link"><i></i><span id="statusTxt"></span></div>
+<div id="auto" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script src="transport.js"></script>
+<script src="p2p.js"></script>
+<script src="assets/deck-data.js"></script>
+<script src="assets/calculator-embed.js"></script>
+<script src="assets/vendor/qrcode.min.js"></script>
+<script src="street.js"></script>
+<script src="streetsnap.js"></script>
+<script src="deck.js"></script>
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grino Research Notes</title>
+<meta name="description" content="Rooftop solar pushes voltage on Armenian streets above the legal limit. What the regulator's data show, why it is not fixed, what we propose, and every source. Team #27 Grino, GreenTech Academy Hackathon, Yerevan, October 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="assets/research.css">
+<style>
+  .chart { position: relative; margin: 1.2rem 0 0.4rem; }
+  .chart .plot svg { width: 100%; height: auto; display: block; }
+  .chart .ax { font: 12px var(--font-head); fill: var(--muted); }
+  .chart .val { font: 600 12px var(--font-head); fill: var(--text); }
+  .chart .ref { font: 600 12px var(--font-head); fill: var(--bad); }
+  .chart .bar { cursor: pointer; }
+  .chart .bar:hover { opacity: .85; }
+  .chart-tip { position: absolute; z-index: 5; max-width: 260px; padding: .45rem .6rem; border-radius: 6px; background: var(--text); color: var(--bg); font: 13px/1.35 var(--font-head); pointer-events: none; }
+  .chart-tip span { opacity: .75; }
+  .switch { display: flex; flex-wrap: wrap; gap: .4rem; margin: .2rem 0 .4rem; }
+  .switch button { font: 600 13px var(--font-head); padding: .35rem .7rem; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); color: var(--text); cursor: pointer; }
+  .switch button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .caption { font: 14px/1.45 var(--font-head); color: var(--muted); margin: .3rem 0 1.4rem; }
+  .bigline { font: 700 1.25rem/1.4 var(--font-head); color: var(--accent-ink); margin: 1.6rem 0; }
+  details.eng { border: 1px solid var(--rule); border-radius: 8px; padding: .2rem 1rem; margin: 1rem 0; background: var(--surface); }
+  details.eng > summary { cursor: pointer; font: 600 15px var(--font-head); padding: .6rem 0; }
+  .dl { display: inline-block; font: 600 14px var(--font-head); padding: .5rem .9rem; border-radius: 8px; background: var(--accent); color: #fff !important; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc" aria-label="Contents">
+  <p class="toc-title">Contents</p>
+  <ol>
+    <li><a href="#short">In short</a></li>
+    <li><a href="#deck">The pitch deck</a></li>
+    <li><a href="#growth">Solar grew from the roofs</a></li>
+    <li><a href="#physics">Why the voltage rises</a></li>
+    <li><a href="#data">What the data show</a></li>
+    <li><a href="#unsolved">Why it is not fixed</a></li>
+    <li><a href="#abroad">Others already act</a></li>
+    <li><a href="#proposal">What we propose</a></li>
+    <li><a href="#model">What the model says</a></li>
+    <li><a href="#unknown">What we do not know</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#business">Who buys it</a></li>
+    <li><a href="#dropped">Ideas we dropped</a></li>
+    <li><a href="#ask">Pilot and ask</a></li>
+    <li><a href="#how">How this was made</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#refs">Sources</a></li>
+  </ol>
+</nav>
+
+<main id="top">
+<header>
+  <p class="kicker">Team #27 Grino · GreenTech Academy Hackathon · Yerevan, 3–4 October 2026</p>
+  <h1>Rooftop solar is pushing Armenian street voltage over the legal limit. The cheapest fixes already exist.</h1>
+  <p class="lede">The long version of our three-minute pitch. The regulator's data, the physics, what other countries did, what we built in 24 hours, and what we still do not know.</p>
+  <div class="meta">
+    <span>Version 2 · 4 October 2026</span>
+    <span><a href="files/grino27_data_code.zip">Data and code (zip)</a></span>
+    <span>No personal data</span>
+  </div>
+</header>
+
+<details class="toc-mobile">
+  <summary>Contents</summary>
+  <ol>
+    <li><a href="#short">In short</a></li>
+    <li><a href="#deck">The pitch deck</a></li>
+    <li><a href="#growth">Solar grew from the roofs</a></li>
+    <li><a href="#physics">Why the voltage rises</a></li>
+    <li><a href="#data">What the data show</a></li>
+    <li><a href="#unsolved">Why it is not fixed</a></li>
+    <li><a href="#abroad">Others already act</a></li>
+    <li><a href="#proposal">What we propose</a></li>
+    <li><a href="#model">What the model says</a></li>
+    <li><a href="#unknown">What we do not know</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#business">Who buys it</a></li>
+    <li><a href="#dropped">Ideas we dropped</a></li>
+    <li><a href="#ask">Pilot and ask</a></li>
+    <li><a href="#how">How this was made</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#refs">Sources</a></li>
+  </ol>
+</details>
+
+<section id="short">
+<h2>In short</h2>
+<ul>
+  <li>Armenia has about 59,000 solar plants on the distribution grid, most of them on roofs <a class="cite" href="#r5">[5]</a>. Around noon they push power back into thin 0.4 kV lines, and the voltage at the far end of the street climbs above 242 V, the legal limit <a class="cite" href="#r6">[6]</a>.</li>
+  <li>The regulator's own monthly data show it. In June 2026, 5,594 feeders were above +10% in the 09–13 h block; on 2,614 of them this happens only around noon — not at night in June or in December — which points to rooftop solar <a class="cite" href="#r1">[1]</a>.</li>
+  <li>At least 149,000 customers got more than 242 V at least once in June, twice the December figure. People who work in the sector told us the real share is about one in three customers.</li>
+  <li>In 2025 ENA received 3,913 claims for appliances damaged by poor power quality, a quarter of all complaints <a class="cite" href="#r2">[2]</a>.</li>
+  <li>The cheapest fixes are a transformer tap change and the voltage-control mode that inverters already have. On our model mountain-village line they keep every home within the limit without losing solar, and let the same wires take 2.7 times more of it; on a real line from the regulator's data the calculator gives 1.7 times.</li>
+  <li>We designed SunGuard, a box next to the inverter that helps from the very first home: it keeps the inverter running instead of shutting down, and shows the voltage on the owner's phone over home Wi-Fi. Together, the boxes and the regulator's data map the problem lines, so ENA can apply the cheapest fix first. We ask for a pilot with 50 solar homes on three problem lines.</li>
+</ul>
+<div class="kpis">
+  <div class="kpi"><div class="v">59,000</div><div class="l">solar plants on ENA's grid, ~1,288 MW</div><div class="s">ENA, Sept 2026 [5]</div></div>
+  <div class="kpi"><div class="v">2,614</div><div class="l">problem lines over 242 V only around noon</div><div class="s">PSRC data, June 2026 [1]</div></div>
+  <div class="kpi"><div class="v">3,913</div><div class="l">appliance-damage claims in 2025, 25% of complaints</div><div class="s">PSRC [2]</div></div>
+  <div class="kpi"><div class="v">×1.7–2.7</div><div class="l">more solar on the same wires after the cheapest fix</div><div class="s">calculator on a real line · model village</div></div>
+</div>
+</section>
+
+<section id="deck">
+<h2>The pitch deck</h2>
+<p>The three-minute presentation is an interactive page: a 3D village where the sun rises, voltage climbs on the long lines, and SunGuard brings them back to green. It runs in any modern browser.</p>
+<p><a class="dl" href="https://grino.vitasha.ru/deck/">Open the presentation</a></p>
+<figure class="img"><img src="assets/deck_preview_s5.png" alt="Pitch deck screen: a 3D village with four lines; lines with SunGuard are green, the line without it shows an emergency shutdown" loading="lazy"><figcaption>Screen 5 of the deck: lines A and B with SunGuard stay at 240 V and the panels keep working; line D without it goes over the limit and its inverters shut down. Model.</figcaption></figure>
+</section>
+
+<section id="growth">
+<h2>Solar grew from the roofs, not from a plan</h2>
+<p>Any customer in Armenia may install up to 150 kW of solar without a licence. Surplus fed into the grid is netted against consumption month by month, whatever the hour <a class="cite" href="#r8">[8]</a>. That rule made rooftop solar a good deal, and people took it: the number of net-metered plants grew from 784 in 2018 to 50,059 at the end of 2025, and 18,810 of them were added in 2025 alone <a class="cite" href="#r4">[4]</a>.</p>
+<div class="chart" id="chart-growth">
+  <div class="switch"><button data-k="count" aria-pressed="true">Plants</button><button data-k="mw" aria-pressed="false">Capacity, MW</button></div>
+  <div class="plot"></div>
+</div>
+<p class="caption">Net-metered ("autonomous") solar producers at the end of each year. PSRC annual reports <a class="cite" href="#r4">[4]</a>; September 2026 is an approximate figure from ENA <a class="cite" href="#r5">[5]</a>. Hover or tap a bar for the value.</p>
+<p>On average that is 0.56 kW of solar per customer. Averages hide the problem. Solar clusters on certain streets and villages, and a feeder with ten rooftop plants behaves nothing like the national mean.</p>
+</section>
+
+<section id="physics">
+<h2>Why the voltage rises at the end of the street</h2>
+<p>A street is usually one 0.4 kV line from a transformer, with houses hanging off it one after another. In the evening, power flows from the transformer to the houses and the voltage drops along the way. At noon on a sunny day the roofs produce more than the street uses, the flow reverses, and the voltage rises along the line instead. The last house sees the highest value.</p>
+<p>The size of the rise is roughly ΔU ≈ (R·P + X·Q) / U: line resistance times exported power, plus reactance times reactive power. Longer and thinner lines and more solar mean a bigger rise. Inverters can pull the voltage back down through the second term by absorbing reactive power. That mode is called volt-var, and most inverters already have it, switched off.</p>
+<p>Two different limits matter, and the gap between them explains a lot.</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Limit</th><th>Value</th><th>What happens</th></tr></thead>
+  <tbody>
+    <tr><td>Legal supply quality</td><td>220 V ± 10% = 198–242 V</td><td>Above 242 V the neighbours' supply is out of spec. Appliances suffer. GOST 32144-2013, in force in Armenia since 2015 <a class="cite" href="#r6">[6]</a>.</td></tr>
+    <tr><td>Inverter protection</td><td>10-minute mean above 253 V</td><td>The inverter switches itself off and the owner loses output. Default setting of EN 50549-1 <a class="cite" href="#r7">[7]</a>.</td></tr>
+  </tbody>
+</table></div>
+<p>Between 242 and 253 V the neighbours are already outside the legal band, but the solar owner loses nothing. This is why the main benefit of fixing the problem goes to the street and to ENA, not to the plant owner. We come back to this when we discuss who pays.</p>
+</section>
+
+<section id="data">
+<h2>The regulator's data already show the problem</h2>
+<p>Every month the Public Services Regulatory Commission (PSRC) publishes a large spreadsheet of voltage deviations at customers, broken down by ENA branch, settlement, transformer and feeder, in four time blocks per day <a class="cite" href="#r1">[1]</a>. The figures are ENA's own calculations. We processed four months, December 2025 and April to June 2026, 823,519 data rows in total.</p>
+<p>The time of day tells the story. In December the worst block is the evening, when everyone cooks and heats. From April on, the midday block takes over. In June, 5,594 feeders were above +10% between 9:00 and 13:00.</p>
+<div class="chart" id="chart-blocks">
+  <div class="switch">
+    <button data-k="Dec 2025" aria-pressed="false">Dec 2025</button><button data-k="Apr 2026" aria-pressed="false">Apr 2026</button><button data-k="May 2026" aria-pressed="false">May 2026</button><button data-k="Jun 2026" aria-pressed="true">Jun 2026</button>
+  </div>
+  <div class="plot"></div>
+</div>
+<p class="caption">Feeders where voltage at customers exceeded 242 V (+10%) in each time block of the month. The highlighted bar is midday. PSRC database <a class="cite" href="#r1">[1]</a>, our count.</p>
+
+<h3>Three kinds of problem feeder</h3>
+<p>A single month cannot say why a feeder is high. Comparing seasons can. We used three simple rules, meant as hypotheses for an engineer to check, not as a diagnosis.</p>
+<ul>
+  <li><b>Solar-type, 2,614 feeders.</b> Above +10% at midday in June, but not at night in June or in December. Midday-only over-voltage is the signature of reverse flow from roofs. (With December nights alone as the control, 4,696 feeders qualify; 2,082 of them are also high on June nights, so their tap or 10 kV setting is part of the story and we leave them out.)</li>
+  <li><b>Tap-type, 1,770 feeders.</b> Above +10% at night in December, when there is no sun. The transformer tap or the 6–10 kV voltage is set too high.</li>
+  <li><b>Overload-type, 743 feeders.</b> Below −10% on December evenings. A long or overloaded line or transformer.</li>
+</ul>
+<div class="chart" id="chart-types"><div class="plot"></div></div>
+<p class="caption">Problem feeders by type and marz. Solar-type and tap-type exclude each other by construction; overload-type can overlap. PSRC database <a class="cite" href="#r1">[1]</a>, our classification.</p>
+<p>Yerevan has the most feeders simply because it has the most customers. Per 10,000 customers, Shirak (ENA's Kars branch) leads with 350 noon-only feeders, ahead of Yerevan and Armavir. That makes Kars our first choice for a pilot.</p>
+
+<h3>How many people</h3>
+<p>The database also counts "customers who received poor-quality electricity". Taken strictly, at least 149,000 customers, 15% of the roughly 980,000 listed, got more than 242 V at least once in June 2026, against 7% in December. Every fourth customer lives on a feeder that went above 242 V at some point between April and June.</p>
+<p>We treat 15% as a floor, not the full picture. The data are ENA's calculation, with four time blocks per day and no measurements published. People who work in the sector told us during the hackathon that about one in three customers experience over-voltage. We cannot document that figure, so we report it as their estimate.</p>
+<div class="box warn"><p>We corrected ourselves during the night. Our first script took the customer count from only one of the two row groups that the database keeps per feeder (customers at 0.4 kV and at 0.2 kV). That shrank the denominator and inflated the documented share. The method is in <a href="#methods">Methods</a>; the corrected script is in the <a href="files/grino27_data_code.zip">zip</a>.</p></div>
+
+<h3>Complaints</h3>
+<p>PSRC's quarterly reports on complaints to ENA have a column for "repair or compensation of appliances due to low power quality". In 2025 it held 3,913 complaints, a quarter of all, and another 2,086 in the first half of 2026 <a class="cite" href="#r2">[2]</a>. The category covers all quality problems, not only solar. In March 2026 PSRC itself wrote about growing quality complaints on 0.4/0.22 kV networks with rooftop plants and frequent disconnections caused by voltage swings <a class="cite" href="#r11">[11]</a>.</p>
+</section>
+
+<section id="unsolved">
+<h2>Why nobody has fixed it yet</h2>
+<p>None of the reasons is a mystery, and none of them needs new physics.</p>
+<ul>
+  <li><b>No rules for inverters.</b> Armenia's grid codes set no technical requirements for renewable plants <a class="cite" href="#r9">[9]</a>. Inverters run on factory settings: full power until they trip at 253 V.</li>
+  <li><b>No view of the feeder.</b> ENA knows contracts, not how much solar actually sits on each feeder and phase. The open data have no phases and no band above +10%.</li>
+  <li><b>Taps are changed after the damage.</b> Our mentor from the sector told us that off-load taps are usually adjusted after complaints, and nobody forecasts voltage on solar feeders.</li>
+  <li><b>No price signal.</b> Monthly netting makes the grid a free battery, and the night tariff is only 10 AMD/kWh below the day tariff <a class="cite" href="#r27">[27]</a>. Owners have no reason to limit noon export.</li>
+  <li><b>Thin management.</b> A branch engineer needs a short list of actions, not another dashboard.</li>
+</ul>
+</section>
+
+<section id="abroad">
+<h2>Other countries already act, and the pattern is the same</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Where</th><th>What they did</th><th>Lesson for Armenia</th></tr></thead>
+  <tbody>
+    <tr><td>China</td><td>From 2026, new distributed PV must be "observable, measurable, adjustable, controllable" (NEA 2025 No. 7) <a class="cite" href="#r14">[14]</a>. Before that, more than 300 counties had simply stopped new connections <a class="cite" href="#r15">[15]</a>.</td><td>Blanket stops are the failure mode. Make visibility and control a condition of connection instead.</td></tr>
+    <tr><td>Tai'an, China</td><td>State Grid Shandong diagnosed 7,619 transformer areas from meter voltages with seven simple rules, then fixed most of them with 3,872 tap changes and crew work orders; only 580 needed construction <a class="cite" href="#r13">[13]</a>.</td><td>Diagnose from data you already have; the tap comes first, construction last. This is the logic of our problem-line map.</td></tr>
+    <tr><td>Germany</td><td>About 400,000 PV systems had to be retrofitted after the "50.2 Hz problem", for €65–175 million <a class="cite" href="#r16">[16]</a>. LV inverters must provide reactive power for voltage support under VDE-AR-N 4105, and since 2025 new plants without a smart meter and control box are capped at 60% feed-in <a class="cite" href="#r17">[17]</a>. German planning practice NOVA: optimise before reinforcing before building <a class="cite" href="#r28">[28]</a>.</td><td>Get inverter settings right at connection. Retrofits are slow and expensive.</td></tr>
+    <tr><td>Australia</td><td>AS/NZS 4777.2:2020 made volt-var and volt-watt modes mandatory for new inverters <a class="cite" href="#r18">[18]</a>.</td><td>Mandatory inverter modes work without new hardware.</td></tr>
+  </tbody>
+</table></div>
+<p>All of them do three things: see where the solar is and what the voltage does, set inverters properly, and limit export only where needed instead of everywhere. Armenia does none of the three yet.</p>
+<p>In Tai'an one example says it all: a transformer area with 182.81 kW of rooftop PV reached 252 V. Four inverters absorbed reactive power, the tap moved one step down, and output was trimmed in 2% steps. Voltage compliance went from 69.6% to 100% <a class="cite" href="#r13">[13]</a>.</p>
+</section>
+
+<section id="proposal">
+<h2>What we propose: one box per home, and a map of the problem lines</h2>
+<p class="bigline">Safe voltage at home, panels that keep working, and more solar on the same wires.</p>
+<h3>SunGuard, a box next to the inverter</h3>
+<p>SunGuard is designed to sit next to a home inverter and help on its own, from the very first home. It measures the voltage every second, switches on and checks the inverter's own voltage-control mode (volt-var), and when the voltage keeps rising it eases the inverter's power down just enough to stay below the inverter's protective shutdown at 253 V, instead of shutting down. Without it, an inverter at the end of a long line can shut down at noon, restart a minute later and shut down again; the owner loses output and the neighbours see voltage swings. The box does not change inverter firmware, and every power limit it sets has a revert timer, so if the box fails the inverter returns to its own certified settings. Holding the legal 242 V for the whole street is ENA's job; the box makes it visible and cheap: the boxes' data show where a transformer should be adjusted.</p>
+<p>The box connects to the home Wi-Fi, as most inverters already do. The owner sees the voltage on the phone, gets an alert when it leaves the legal band, and keeps a log that can be shown to ENA with a damage claim. When several homes on a street have boxes, the cloud sees the whole street and shares the reduction fairly, so the last house does not carry everyone.</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Part</th><th>Role</th><th>Price, AMD</th></tr></thead>
+  <tbody>
+    <tr><td>ESP32-WROOM-32UE</td><td>microcontroller with Wi-Fi</td><td>2,750</td></tr>
+    <tr><td>MAX485 module</td><td>link to the inverter (RS485 / Modbus)</td><td>610</td></tr>
+    <tr><td>ZMPT101B</td><td>voltage sensor</td><td>1,010</td></tr>
+    <tr><td>HLK-5M05</td><td>230 V to 5 V supply</td><td>3,100</td></tr>
+    <tr><td>DIN-rail case, terminals, fuse, varistor</td><td>enclosure and protection</td><td>~3,200</td></tr>
+    <tr><td><b>Total</b></td><td></td><td><b>≈ 11,000 (≈ $30)</b></td></tr>
+  </tbody>
+</table></div>
+<p class="caption">Retail prices at chipdip.am on 3 October 2026 <a class="cite" href="#r23">[23]</a>. Excludes assembly, installation and certification.</p>
+<p>We first designed the boxes to talk to each other by radio. We dropped that for two reasons. A single box must work on its own, without neighbours, and the popular LoRa band at 868 MHz sits inside 862–880 MHz, which Armenia's frequency table reserves for government use <a class="cite" href="#r19">[19]</a>. Wi-Fi at 2.4 GHz up to 100 mW needs no permit <a class="cite" href="#r20">[20]</a>; frequency licences are issued by PSRC <a class="cite" href="#r21">[21]</a>, and LoRa 868 modules are not on the Eurasian list of radio devices importable without documents <a class="cite" href="#r22">[22]</a>.</p>
+<h3>A map of problem lines, and the cheapest fix first</h3>
+<p>From the regulator's open data we already found 2,614 lines with noon-only over-voltage. For each line a calculator built during the hackathon tests the cheap measures first: change the transformer tap, switch on volt-var in the inverters, and only then rebuild the line. It runs in a browser, in English, Armenian and Russian, and includes 400 real problem lines. <a href="https://grino.vitasha.ru/deck/assets/calculator.html">Open the calculator.</a> As more homes install boxes, the map is built from measured voltages instead of ENA's calculations; that map is what ENA would buy later. The diagnosis is rule-based; machine learning only makes sense once real measurements are in.</p>
+<p>Where a tap change and one-time inverter settings are enough, no box is needed at all. The box is for homes that need their panels to keep working, for streets where the settings must be verified, and for streets where the line leaves no choice but trimming.</p>
+</section>
+
+<section id="model">
+<h2>What the model says</h2>
+<p>We built an illustrative network in pandapower <a class="cite" href="#r25">[25]</a>: a 110/10 kV substation, a 17 km 10 kV line and three settlements, an urban block, an Ararat-valley village with irrigation pumps and a mountain village with 48 kWp of rooftop solar on a 1 km aluminium line. It is not a model of a real ENA feeder; it reproduces the patterns in the PSRC data so that measures can be compared.</p>
+<figure class="img"><img src="assets/fig1_daily_voltage.png" alt="Customer voltage over a day in three model settlements, December and June" loading="lazy"><figcaption>Customer voltage over a clear day. Solid: as is; dashed: seasonal tap; dotted: tap plus inverter volt-var. Green band 198–242 V. Model.</figcaption></figure>
+<p>On a clear June day the last house in the mountain village reaches 252 V. Three ways to fix it:</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Measure</th><th>Highest voltage</th><th>Solar lost</th></tr></thead>
+  <tbody>
+    <tr><td>Nothing</td><td>252 V</td><td>0%, but neighbours above 242 V for 9 hours</td></tr>
+    <tr><td>Trim all solar equally, nothing else</td><td>≤ 242 V</td><td>32% of the day's solar</td></tr>
+    <tr><td>Tap one step down plus inverter volt-var</td><td>≤ 242 V</td><td>0%</td></tr>
+  </tbody>
+</table></div>
+<p>The order matters. Trimming alone keeps the limit but throws away a third of the energy. The tap plus volt-var keeps it for free. That is why the cheap fixes come first and SunGuard trims only what is left.</p>
+<div class="chart" id="chart-hosting">
+  <div class="switch"><button data-k="Mountain village" aria-pressed="true">Mountain village</button><button data-k="Ararat-valley village" aria-pressed="false">Ararat-valley village</button><button data-k="Urban block" aria-pressed="false">Urban block</button></div>
+  <div class="plot"></div>
+</div>
+<p class="caption">Hosting capacity: how much rooftop solar the feeder takes before anyone exceeds 242 V at 13:00 in June. Model. In the Ararat-valley village the tap cannot be lowered, because evening voltage already falls below 198 V; only volt-var applies there.</p>
+<p>One more result surprised us. Volt-var works through the line's reactance, so it helps a lot on bare overhead wires and much less on aerial bundled cable (SIP) and underground cable, which have low reactance. On a village feeder, volt-var raised hosting capacity from 43 to 98 kWp on bare AC-95 wire, but only from 32 to 37 kWp on SIP 4×70. New and rebuilt rural lines are increasingly SIP, so on those streets SunGuard will have to trim more often.</p>
+</section>
+
+<section id="unknown">
+<h2>What we do not know</h2>
+<ul>
+  <li><b>How often voltage reaches 253 V.</b> The data stop at "above +10%". Without inverter logs we cannot count trips, so we do not claim savings for solar owners.</li>
+  <li><b>How good the data are.</b> The PSRC figures are ENA's calculations; the method is not published, and no independent measurements exist.</li>
+  <li><b>Real feeders.</b> Lengths, conductors and solar per feeder are not public. Our calculator uses labelled averages until ENA's data are in.</li>
+  <li><b>Inverters in the field.</b> SunGuard has not yet talked to a real inverter. Modbus maps differ by brand.</li>
+  <li><b>Some international facts</b> come from secondary sources; we mark them in the source list.</li>
+</ul>
+</section>
+
+<section id="risks">
+<h2>Risks we see, and what we do about them</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Risk</th><th>Response</th></tr></thead>
+  <tbody>
+    <tr><td>The owner loses nothing between 242 and 253 V, so why buy a box?</td><td>The first buyers are homes at the end of long lines, where inverters do reach the emergency shutdown and appliances are at risk. How often that happens is the first thing the pilot measures. Installers can bundle the box with new plants.</td></tr>
+    <tr><td>An installer could just set volt-var once</td><td>That is exactly our first recommendation. The box is for homes and streets that need verification, protection or data.</td></tr>
+    <tr><td>A lower tap can break the winter evening</td><td>Every option is checked over 24 hours and both seasons; seasonal taps are reversed before winter; a 7-day check after each change, as in Tai'an.</td></tr>
+    <tr><td>Warranty, liability, cyber-security</td><td>Only modes the inverter already has, no firmware changes, fallback to certified settings, encrypted connection to the cloud, agreement with ENA and PSRC before field use.</td></tr>
+    <tr><td>Data and consent</td><td>Plant data go to ENA only with the owner's consent; aggregate reporting by default.</td></tr>
+  </tbody>
+</table></div>
+</section>
+
+<section id="business">
+<h2>Who buys it, and the economics of one box</h2>
+<p>The first customers are families with rooftop solar at the end of long lines: their inverters shut down at noon and their appliances are at risk. The second are solar installers, who build about 19,000 new plants a year <a class="cite" href="#r4">[4]</a> and get the angry calls when inverters trip; the box makes their offer better. ENA comes later, when the boxes have mapped the problem streets.</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Item</th><th>Value</th><th>Basis</th></tr></thead>
+  <tbody>
+    <tr><td>Parts, Wi-Fi version</td><td>≈ $30 (11,000 AMD)</td><td>chipdip.am, 3 Oct 2026 <a class="cite" href="#r23">[23]</a></td></tr>
+    <tr><td>Assembly, testing, certification</td><td>≈ $12</td><td>assumption</td></tr>
+    <tr><td>Price to the home, incl. VAT</td><td>$79</td><td>assumption</td></tr>
+    <tr><td>Margin after VAT</td><td>≈ 36%</td><td>from the rows above</td></tr>
+    <tr><td>Solar plants today / new in 2025</td><td>~59,000 / 18,810</td><td>ENA <a class="cite" href="#r5">[5]</a>; PSRC <a class="cite" href="#r4">[4]</a></td></tr>
+    <tr><td>Year 1: 5% of today's plants</td><td>≈ 3,000 boxes ≈ $0.24 M</td><td>assumption</td></tr>
+    <tr><td>By year 3, cumulative: 20% of today's plants + 10% of new ones</td><td>≈ 16,000 boxes ≈ $1.3 M</td><td>assumption</td></tr>
+    <tr><td>Whole Armenia</td><td>≈ $4.7 M once + ≈ $1–1.5 M a year</td><td>59,000 and 13,000–19,000 new a year × $79</td></tr>
+  </tbody>
+</table></div>
+<p>Alternatives today: the installer can switch on volt-var once — that is our own first advice, and where it is enough no box is needed; the inverter's own app shows one inverter, usually after it has tripped; a plain voltage relay protects appliances but neither controls the inverter nor records anything. Armenian installers already work in Georgia and Uzbekistan <a class="cite" href="#r12">[12]</a>, which gives the product a channel abroad.</p>
+</section>
+
+<section id="dropped">
+<h2>Ideas we looked at and dropped</h2>
+<ul>
+  <li><b>Home batteries.</b> Under monthly netting a family has little to shift, and the night tariff is only 10 AMD cheaper. A 10 kWh battery pays back in 20–40 years.</li>
+  <li><b>A sensor in every substation.</b> Tens of thousands of devices. Better to compute from existing data and measure only where numbers disagree.</li>
+  <li><b>Automatic load switching between feeders.</b> Ties between 0.4 kV feeders are rare and switching belongs to ENA's protection domain.</li>
+  <li><b>A phase balancer as the product.</b> The problem is real and automatic phase-swapping devices exist <a class="cite" href="#r24">[24]</a>, but the open data have no phases and crews fix imbalance with a work order. We kept it as a demo stand.</li>
+  <li><b>Selling noon surplus.</b> Already legal under netting; more noon export loads the grid more, and daytime curtailment of guaranteed-purchase plants already costs 3.35 bn AMD in the 2026 tariff <a class="cite" href="#r10">[10]</a>.</li>
+  <li><b>Dynamic household tariffs.</b> Needs regulation, and industry participants at the workshop saw it as ineffective here.</li>
+  <li><b>LoRa at 868 MHz.</b> Government band in Armenia.</li>
+</ul>
+</section>
+
+<section id="ask">
+<h2>Pilot and ask</h2>
+<p>Three months in the GreenTech Academy incubator (15 October 2026 to 22 January 2027) <a class="cite" href="#r26">[26]</a>:</p>
+<ol>
+  <li><b>Month 1.</b> Two installers and 50 solar homes on three problem lines in one ENA branch (Kars or Gegham). Inverter event logs from those homes, to learn how often 253 V is reached; agreement with ENA on meter data for the same lines.</li>
+  <li><b>Month 2.</b> SunGuard prototypes in the 50 homes, volt-var settings checked on every inverter, the cheapest fixes proposed to ENA for the three lines (tap changes during planned outages).</li>
+  <li><b>Month 3.</b> Before and after on the same meters: customer-hours outside 198–242 V, days from problem to fix, evening minimum after tap changes, kW of solar accepted without construction.</li>
+</ol>
+<p class="bigline">Our ask: 50 solar homes on three problem lines for a pilot, two solar installers, and ENA's meter data for those lines.</p>
+</section>
+
+<section id="how">
+<h2>How this was made</h2>
+<p>We started from public sources, including the PSRC files, as the hackathon rules allow <a class="cite" href="#r26">[26]</a>. Everything shown in the pitch — the analysis scripts, the network model, the calculator, the SunGuard design and bill of materials, the radio-law check, the presentation and this page — was built during the hackathon. Code and data: <a href="https://github.com/vitasha10/grino-smart-grid">github.com/vitasha10/grino-smart-grid</a>.</p>
+<p>We used Claude (Anthropic) for research, code and drafting. Every number here was checked against its source file or recomputed. We corrected three of our own figures during the event: the customer share described above, an early owner-payback estimate that assumed losses above 242 V instead of 253 V, and a loss figure our mentor showed us was wrong.</p>
+<p>This page contains only aggregate figures and infrastructure codes — no names or addresses.</p>
+<p><a class="dl" href="files/grino27_data_code.zip">Download data and code (zip, 58 KB)</a> &nbsp; <a href="files/README.txt">README</a></p>
+</section>
+
+<section id="methods">
+<h2>Methods, for engineers</h2>
+<details class="eng"><summary>Processing the PSRC voltage database</summary>
+<p>Four monthly files (December 2025, April–June 2026) from the PSRC service-quality page <a class="cite" href="#r1">[1]</a>, 37,324–39,448 feeders each. A feeder is the pair (transformer code, feeder code). About 10,000–11,000 feeders per month appear in two row groups, one for customers supplied at 0.4 kV and one at 0.2 kV, each with its own customer count; in June these sum to 949,781 and 30,392 customers.</p>
+<p>For each (feeder, group) we take the maximum of "customers who received poor-quality electricity" over all time blocks and all bands on one side (above +10%, or below −10%), and sum over groups and feeders. The maximum, not the sum, avoids counting the same people in several blocks, so the result is a lower bound for unique customers. The denominator is the sum of all groups' customer counts: 980,173–1,016,574 per month, 86–90% of ENA's 1,135,537 customers <a class="cite" href="#r3">[3]</a>.</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Month</th><th>Customers listed</th><th>&gt; 242 V</th><th>%</th><th>&lt; 198 V</th><th>%</th><th>Feeders &gt; 242 V</th></tr></thead>
+  <tbody>
+    <tr><td>Dec 2025</td><td>1,016,574</td><td>71,214</td><td>7.0</td><td>27,542</td><td>2.7</td><td>3,764</td></tr>
+    <tr><td>Apr 2026</td><td>980,460</td><td>136,067</td><td>13.9</td><td>31,872</td><td>3.3</td><td>6,025</td></tr>
+    <tr><td>May 2026</td><td>980,704</td><td>140,435</td><td>14.3</td><td>15,432</td><td>1.6</td><td>6,889</td></tr>
+    <tr><td>Jun 2026</td><td>980,173</td><td>148,822</td><td>15.2</td><td>28,830</td><td>2.9</td><td>6,972</td></tr>
+  </tbody>
+</table></div>
+</details>
+<details class="eng"><summary>Feeder typology</summary>
+<p>Tap-type: above +10% in the 01–08 h block in December 2025. Solar-type: above +10% in the 09–13 h block in June 2026 and not tap-type. Overload-type: below −10% in the 19–24 h block in December 2025. Of the 743 overload-type feeders, 415 transformers have low voltage on only some feeders (a line problem). Only five feeders were both above +10% and below −10% in the same block, which would hint at phase imbalance; the data have no phases.</p>
+</details>
+<details class="eng"><summary>Network model</summary>
+<p>pandapower 3.5.5, Newton–Raphson. 110 kV source; 110/10 kV 16 MVA transformer; 10 kV overhead line 3 + 6 + 8 km. Urban block: 0.63 MVA transformer, AL 95 line 0.4 km, 80 customers on the feeder plus 300 lumped. Ararat-valley village: 0.25 MVA, AL 50 1.2 km, 60 + 100 customers, 16 kWp PV, 12 kW irrigation pumps at the line end in summer. Mountain village: 0.25 MVA, AL 50 1.0 km, 40 + 60 customers, 48 kWp PV, more towards the end. Consumption 281 kWh per customer per month in December and 174 in June (medians of the PSRC data), residential hourly shapes, clear-day solar peaks 0.82 kW/kWp in June and 0.55 in December. Seasonal tap ±2.5% per step; volt-var: absorb reactive power at cos φ 0.9 where voltage exceeds 1.05 p.u. Limits 0.90–1.10 p.u. of 220 V on hourly values (GOST uses 10-minute values).</p>
+<figure class="img"><img src="assets/fig2_voltage_profile.png" alt="Voltage profile along the 10 kV line and LV feeders" loading="lazy"><figcaption>Voltage along the 10 kV line and down each LV feeder; June 13:00 and December 20:00. Model.</figcaption></figure>
+</details>
+<details class="eng"><summary>Calculator physics and check</summary>
+<p>One 0.4 kV feeder split into five equal sections, load and PV spread evenly, other feeders of the transformer lumped at its bus. Standard 10/0.4 kV transformer data. Backward/forward sweep, up to 40 iterations to 10⁻⁷ p.u. Ten options per feeder (five tap positions × volt-var off/on), ranked by cost and then by hours outside limits. The same feeder built in pandapower agreed within 0.1 V in four test cases. Real feeders are loaded with the customer count from the database and labelled averages for everything the open data lack.</p>
+</details>
+<details class="eng"><summary>Conductors</summary>
+<div class="table-wrap"><table>
+  <thead><tr><th>Line (1 km, 40 households, 48 kWp, June)</th><th>Max V</th><th>Hours outside</th><th>Hosting, kWp</th><th>with volt-var</th></tr></thead>
+  <tbody>
+    <tr><td>AC-50 bare</td><td>249</td><td>8</td><td>29</td><td>41</td></tr>
+    <tr><td>SIP 4×70</td><td>247</td><td>7</td><td>32</td><td>37</td></tr>
+    <tr><td>SIP 4×95</td><td>244</td><td>6</td><td>38</td><td>47</td></tr>
+    <tr><td>AC-95 bare</td><td>243</td><td>4</td><td>43</td><td>98</td></tr>
+    <tr><td>SIP 4×120</td><td>243</td><td>3</td><td>44</td><td>58</td></tr>
+    <tr><td>Cable Al 4×150</td><td>242</td><td>0</td><td>51</td><td>70</td></tr>
+    <tr><td>Cable Al 4×240</td><td>240</td><td>0</td><td>73</td><td>133</td></tr>
+  </tbody>
+</table></div>
+<p class="caption">Calculator engine, 3 October 2026. 83% of ENA's 17,280 km of 0.4 kV lines are overhead <a class="cite" href="#r3">[3]</a>; the split by conductor type is not published.</p>
+</details>
+</section>
+
+<section id="refs">
+<h2>Sources</h2>
+<ol class="refs">
+  <li id="r1">PSRC. Calculated indicators of voltage deviation beyond permissible limits at consumers, Appendix 3 to decision 441-Ա (16.11.2022); monthly files Dec 2025, Apr–Jun 2026. <a href="https://www.psrc.am/contents/fields/electric_energy/el_energy_service_quality_indicators">psrc.am, service quality indicators</a>.</li>
+  <li id="r2">PSRC. Quarterly reports on consumer complaints to ENA, 2025 Q1–Q4 and 2026 Q1–Q2 (columns: quality, appliance repair/compensation, total). Same PSRC page.</li>
+  <li id="r3">PSRC. Service-quality indicators 2025: interruptions summary Q4 2025 (1,135,537 customers) and reliability summary 2025 (9,975 TPs; 14,386.7 km overhead + 2,893.6 km cable 0.4 kV lines). Same PSRC page.</li>
+  <li id="r4">PSRC. Annual reports 2024 and 2025 (autonomous producers 31,249 and 50,059 / 640.1 MW). <a href="https://www.psrc.am/uploads/files/2026/21-04-26/Ardir.pdf">Annual report 2025 (PDF)</a>.</li>
+  <li id="r5">Armenpress, 3 September 2026: ENA on about 59,000 solar plants and ~1,288 MW on its grid. <a href="https://armenpress.am/en/article/1259636">armenpress.am/en/article/1259636</a>.</li>
+  <li id="r6">GOST 32144-2013, Power quality limits in public power supply systems, clause 4.2.2; in force in Armenia since 1 June 2015 (Armstandard catalogue).</li>
+  <li id="r7">EN 50549-1:2019, Requirements for generating plants connected to LV distribution networks; default interface protection as reproduced in inverter type-test reports. The standard is paywalled; not checked against the primary text.</li>
+  <li id="r8">Law of the Republic of Armenia "On Energy", consolidated 24.10.2025, articles 56.1–56.3. <a href="https://www.arlis.am/hy/acts/216338">arlis.am/hy/acts/216338</a>.</li>
+  <li id="r9">ADB / World Bank. Legal assessment of wind power project viability in Armenia, June 2024, p. 5. <a href="http://documents.worldbank.org/curated/en/099062824091135496/pdf/P1746661312b120a196da1f3ce423e3f79.pdf">PDF</a>.</li>
+  <li id="r10">PSRC. Electricity tariffs 2026, review for 01.02.2026–31.01.2027 (forced curtailment of guaranteed-purchase plants: 168.29 million kWh, 3.35 bn AMD).</li>
+  <li id="r11">PSRC. Analysis of renewable-energy development, March 2026, p. 36.</li>
+  <li id="r12">eclareon / BSW-Solar. ENABLING PV in Armenia, November 2024, pp. 17, 21, 22. <a href="https://www.solarwirtschaft.de/datawall/uploads/2024/11/Study_ENABLING_PV_in_Armenia.pdf">PDF</a>.</li>
+  <li id="r13">National Energy Administration of China. Compilation of typical cases of power-quality management in the power industry, November 2025, case "Shandong Tai'an", pp. 55–62.</li>
+  <li id="r14">National Energy Administration of China. Administrative Measures for Distributed PV (NEA 2025 No. 7) and official Q&amp;A, nea.gov.cn. Secondary summary; not archived.</li>
+  <li id="r15">Reports on hosting-capacity "red zones" in Chinese counties: gdshe.org/article/22578.html; people.com.cn, 22.01.2024. Secondary.</li>
+  <li id="r16">DNV. The German 50.2 Hz problem. <a href="https://www.dnv.com/cases/the-german-50-2-hz-problem-80862">dnv.com</a>.</li>
+  <li id="r17">SMA. Solarspitzengesetz 2025 explainer. <a href="https://www.sma.de/solarspitzengesetz2025">sma.de/solarspitzengesetz2025</a>.</li>
+  <li id="r18">Standards Australia. AS/NZS 4777.2:2020, Grid connection of energy systems via inverters, Part 2. Secondary summary.</li>
+  <li id="r19">Order 71-Ն (28.02.2008), Table of allocation of radio-frequency bands of the Republic of Armenia, version from 09.05.2026: sect. 3.6 item 1; sect. 4.2 items 20, 24, 27. <a href="https://www.arlis.am/hy/acts/224835">arlis.am/hy/acts/224835</a>.</li>
+  <li id="r20">PSRC decision 169-Ն (13.04.2011), version from 06.12.2024, p. 3(1), p. 4(8)–(9). <a href="https://www.arlis.am/hy/acts/200563">arlis.am/hy/acts/200563</a>.</li>
+  <li id="r21">Law ՀՕ-176-Ն on electronic communication, arts. 4, 5, 17. <a href="https://www.arlis.am/hy/acts/209934">arlis.am/hy/acts/209934</a>.</li>
+  <li id="r22">Eurasian Economic Commission decision 30 (21.04.2015), section 2.16, Annex 2. <a href="https://www.alta.ru/tamdoc/15kr0030/">alta.ru</a>.</li>
+  <li id="r23">ChipDip Armenia, <a href="https://www.chipdip.am/">chipdip.am</a>, prices on 3 October 2026.</li>
+  <li id="r24">Bao G., Ke S. Load transfer device for solving a three-phase unbalance problem under a low-voltage distribution network. Energies 12 (2019) 2842.</li>
+  <li id="r25">Thurner L. et al. pandapower: an open-source Python tool for convenient modeling, analysis, and optimization of electric power systems. IEEE Trans. Power Systems 33 (2018) 6510–6521.</li>
+  <li id="r26">GreenTech Academy. Hackathon rules and incubation programme. <a href="https://greentechacademy.am/hackathon">greentechacademy.am</a>.</li>
+  <li id="r27">ENA residential tariffs, unchanged for 2026: 46.48 / 48.48 / 53.48 AMD/kWh by day, 10 AMD less at night.</li>
+  <li id="r28">VDE|FNN. Information sheet on controllable local transformers, July 2016 (NOVA principle: grid optimisation before reinforcement before expansion). <a href="https://www.vde.com/resource/blob/806084/deb57e00a6eb3c492b20d51a54dbb651/hinweis-ront-infoblatt-data.pdf">PDF</a>.</li>
+</ol>
+</section>
+
+<p class="foot">Team #27 Grino · GreenTech Academy Hackathon · Yerevan, October 2026 · Static page, no tracking · <a href="#top">Back to top</a></p>
+</main>
+</div>
+<script src="assets/toc.js"></script>
+<script src="assets/charts.js"></script>
+</body>
+</html>

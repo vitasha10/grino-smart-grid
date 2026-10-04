@@ -1,0 +1,90 @@
+[
+ {
+  "marz_hy": "Երևան",
+  "marz": "Yerevan",
+  "solar_feeders": 2816,
+  "tap_feeders": 1002,
+  "overload_feeders": 161,
+  "solar_customers": 21707
+ },
+ {
+  "marz_hy": "Կոտայք",
+  "marz": "Kotayk",
+  "solar_feeders": 530,
+  "tap_feeders": 75,
+  "overload_feeders": 55,
+  "solar_customers": 5912
+ },
+ {
+  "marz_hy": "Շիրակ",
+  "marz": "Shirak",
+  "solar_feeders": 389,
+  "tap_feeders": 32,
+  "overload_feeders": 8,
+  "solar_customers": 6782
+ },
+ {
+  "marz_hy": "Արմավիր",
+  "marz": "Armavir",
+  "solar_feeders": 232,
+  "tap_feeders": 0,
+  "overload_feeders": 151,
+  "solar_customers": 5402
+ },
+ {
+  "marz_hy": "Արարատ",
+  "marz": "Ararat",
+  "solar_feeders": 113,
+  "tap_feeders": 67,
+  "overload_feeders": 171,
+  "solar_customers": 2373
+ },
+ {
+  "marz_hy": "Գեղարքունիք",
+  "marz": "Gegharkunik",
+  "solar_feeders": 54,
+  "tap_feeders": 251,
+  "overload_feeders": 11,
+  "solar_customers": 938
+ },
+ {
+  "marz_hy": "Սյունիք",
+  "marz": "Syunik",
+  "solar_feeders": 160,
+  "tap_feeders": 113,
+  "overload_feeders": 21,
+  "solar_customers": 1289
+ },
+ {
+  "marz_hy": "Տավուշ",
+  "marz": "Tavush",
+  "solar_feeders": 95,
+  "tap_feeders": 90,
+  "overload_feeders": 64,
+  "solar_customers": 1038
+ },
+ {
+  "marz_hy": "Լոռի",
+  "marz": "Lori",
+  "solar_feeders": 171,
+  "tap_feeders": 7,
+  "overload_feeders": 29,
+  "solar_customers": 2477
+ },
+ {
+  "marz_hy": "Վայոց ձոր",
+  "marz": "Vayots Dzor",
+  "solar_feeders": 87,
+  "tap_feeders": 90,
+  "overload_feeders": 2,
+  "solar_customers": 901
+ },
+ {
+  "marz_hy": "Արագածոտն",
+  "marz": "Aragatsotn",
+  "solar_feeders": 49,
+  "tap_feeders": 43,
+  "overload_feeders": 70,
+  "solar_customers": 882
+ }
+]

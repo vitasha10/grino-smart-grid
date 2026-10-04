@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.ico">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1A15">
+<meta name="color-scheme" content="dark">
+<title>Grino #27 · Remote</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+:root{--bg:#0B1511;--card:#13231C;--card2:#1A2E25;--line:rgba(255,255,255,.1);--ink:#F4F1E8;--mut:rgba(244,241,232,.62);
+  --sun:#FFB547;--ok:#34C77B;--ok2:#5BE59A;--amber:#F5A524;--red:#EF4B4F;--blue:#6FB7FF;
+  --font:'Plus Jakarta Sans','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-variant-numeric:tabular-nums}
+body{min-height:100vh;padding:max(10px,env(safe-area-inset-top)) 12px max(18px,env(safe-area-inset-bottom));touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.conn{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.dot{flex:none;width:16px;height:16px;border-radius:50%;background:#6b7570;box-shadow:0 0 0 4px rgba(255,255,255,.06);transition:background .25s,box-shadow .25s}
+.conn.ok .dot{background:var(--ok);box-shadow:0 0 0 5px rgba(52,199,123,.22),0 0 14px var(--ok)}
+.conn.wait .dot{background:var(--amber);box-shadow:0 0 0 5px rgba(245,165,36,.2)}
+.conn.bad .dot{background:var(--red);box-shadow:0 0 0 5px rgba(239,75,79,.25)}
+.ct{min-width:0}.ct b{display:block;font-size:15px;line-height:1.2}.ct span{display:block;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timer{flex:none;text-align:right}
+.timer b{display:block;font-size:28px;font-weight:800;line-height:1}
+.timer span{font-size:11px;color:var(--mut)}
+.timer.ontime b{color:var(--ok2)}.timer.behind b{color:var(--amber)}.timer.late b{color:var(--red)}.timer.ahead b{color:var(--blue)}
+.warn{display:none;padding:10px 12px;border-radius:14px;background:rgba(239,75,79,.15);border:1.5px solid rgba(239,75,79,.6);color:#FFB3B3;font-size:14px;font-weight:600}
+.warn.on{display:block}
+.cur{padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#1C3529,#13231C);border:1px solid var(--line)}
+.cur small{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--sun);font-weight:800}
+.cur h1{margin:2px 0 0;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.cur .deckline{font-size:13px;color:var(--mut);margin-top:4px}
+.cur .tgt{font-size:13px;margin-top:6px;font-weight:700}
+.nav{display:grid;grid-template-columns:1fr 1.6fr;gap:10px}
+.nav button{height:96px;border-radius:22px;font-size:26px;font-weight:800;background:var(--card2);border:1px solid var(--line)}
+.nav .next{background:linear-gradient(135deg,#FFD27A,#FFB547);color:#1A1205;border:0}
+.nav button:active,.big:active,.chipb:active{transform:scale(.97)}
+.ctx{display:flex;flex-direction:column;gap:10px}
+.panel{padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);display:none}
+.panel.on{display:block}
+.panel h2{margin:0 0 10px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.panel h2 i{font-style:normal;color:var(--sun)}
+.slider{position:relative;height:84px;border-radius:20px;background:linear-gradient(90deg,#1B2A4A,#6E5B8C 30%,#F6B38A 55%,#FFD27A 80%,#FFF1C2);touch-action:none;overflow:hidden}
+.slider.calc{background:linear-gradient(90deg,#1E3A2E,#3E7A5A 50%,#F5A524 80%,#EF4B4F)}
+.slider .fill{position:absolute;inset:0 auto 0 0;background:rgba(0,0,0,.25);pointer-events:none}
+.slider .thumb{position:absolute;top:6px;bottom:6px;width:72px;margin-left:-36px;border-radius:16px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.45);display:grid;place-items:center;color:#1A1205;font-weight:800;font-size:18px;pointer-events:none}
+.slider .lab{position:absolute;bottom:6px;font-size:12px;font-weight:700;color:rgba(255,255,255,.85);pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.slider.off{opacity:.35;filter:grayscale(1)}
+.row{display:flex;gap:10px;margin-top:10px}
+.row>*{flex:1}
+.big{width:100%;height:70px;border-radius:18px;font-size:20px;font-weight:800;background:var(--card2);border:1px solid var(--line)}
+.big.guard{height:96px;font-size:26px}
+.big.guard.on{background:linear-gradient(135deg,#5BE59A,#2FA866);color:#06170E;border:0;box-shadow:0 0 30px rgba(91,229,154,.35)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chips button{flex:1 1 auto;min-width:64px;height:52px;border-radius:14px;background:var(--card2);border:1px solid var(--line);font-size:15px;font-weight:700;padding:0 10px}
+.chips button.on{background:var(--sun);color:#1A1205;border:0}
+.big.sec{font-size:16px;height:58px}
+.big.hot{background:linear-gradient(135deg,#FFD27A,#FFB547);color:#1A1205;border:0}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:14px;margin-top:10px;color:var(--mut)}
+.kv b{color:var(--ink)}
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.chipb.danger{background:#3A1A16;border-color:rgba(239,75,79,.5);color:#FFB3B3}
+.big:disabled{opacity:.4}
+.pad{height:130px;border-radius:18px;background:repeating-linear-gradient(90deg,#14241C 0 22px,#18291F 22px 44px);border:1px solid var(--line);touch-action:none;display:grid;place-items:center;color:var(--mut);font-weight:700;font-size:18px}
+.pad.active{border-color:#9FD8F5;color:#9FD8F5}
+/* v8 sun strip: tall vertical slider on the right (thumb side); absolute: touch height = sun height */
+.sunwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(46%,1.2fr);gap:12px;height:max(320px,calc(100vh - 400px));height:max(320px,calc(100svh - 400px));max-height:640px}
+.presets{display:flex;flex-direction:column;gap:10px;min-width:0}
+.presets button{flex:1;border-radius:18px;font-size:22px;font-weight:800;background:var(--card2);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.presets button small{font-size:12px;font-weight:700;color:var(--mut)}
+.presets button.on{background:linear-gradient(135deg,#FFD27A,#FFB547);color:#1A1205;border:0}
+.presets button.on small{color:#5A3D05}
+.strip{position:relative;border-radius:24px;touch-action:none;overflow:hidden;cursor:ns-resize;
+  background:linear-gradient(0deg,#141B30 0%,#2A2C48 10%,#4E4570 24%,#9C6E86 40%,#F6B38A 58%,#FFD27A 80%,#FFF1C2 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.strip .over{position:absolute;left:0;right:0;top:0;background:repeating-linear-gradient(135deg,rgba(213,94,0,.20) 0 10px,rgba(213,94,0,.08) 10px 20px);pointer-events:none}
+.strip .lim{position:absolute;left:0;right:0;height:0;border-top:3px dashed #D55E00;pointer-events:none}
+.strip .lim span{position:absolute;left:8px;top:-27px;font-size:13px;font-weight:800;color:#fff;background:#D55E00;border-radius:8px;padding:3px 7px;white-space:nowrap}
+.strip .lab{position:absolute;left:12px;font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;pointer-events:none}
+.strip .lab.top{top:8px;color:#5A3D05}.strip .lab.bot{bottom:8px;color:rgba(244,241,232,.8)}
+.strip .ghost{position:absolute;left:10px;right:10px;height:0;border-top:2px solid rgba(255,255,255,.75);pointer-events:none;transition:top .12s linear}
+.strip .ghost i{position:absolute;left:0;top:2px;font-style:normal;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.strip .knob{position:absolute;right:10px;width:84px;height:84px;margin:-42px 0 0 0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,#FFF6DA 0 36%,#FFC75A 37% 50%,rgba(255,210,122,.45) 51% 70%,rgba(255,210,122,0) 71%)}
+.strip.off{opacity:.35;filter:grayscale(1)}
+.strip.hint .knob{animation:hintPulse 1.2s ease-in-out infinite}
+@keyframes hintPulse{50%{transform:scale(1.15)}}
+#sunH{color:var(--sun);white-space:nowrap}
+#pSun h2 i{white-space:nowrap}
+.chipb{height:54px;border-radius:14px;background:var(--card2);border:1px solid var(--line);font-size:15px;font-weight:700}
+.chipb.on{background:#FFF;color:#0B1511}
+.tmr{display:flex;gap:8px;align-items:center}
+.tmr button{flex:1;height:48px;border-radius:14px;background:var(--card2);border:1px solid var(--line);font-weight:700}
+.speech{padding:14px 16px;border-radius:18px;background:#0F1B16;border:1px dashed rgba(255,255,255,.16);font-size:16px;line-height:1.5;color:#E7E3D8;-webkit-user-select:text;user-select:text}
+.speech .dir{display:block;font-style:italic;color:var(--sun);font-size:14px;margin-bottom:6px}
+.list{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.list button{height:62px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:12px;font-weight:700;line-height:1.15;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.list button b{font-size:17px}
+.list button.cur{background:var(--sun);color:#1A1205;border:0}
+.list button.deck{box-shadow:inset 0 0 0 3px var(--ok2)}
+.foot{font-size:12px;color:var(--mut);line-height:1.5;padding:4px 2px;word-break:break-all;-webkit-user-select:text;user-select:text}
+.foot b{color:var(--ink)}
+@media (min-width:700px){.wrap{max-width:640px}.nav button{height:110px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="conn" id="conn"><span class="dot"></span><div class="ct"><b id="connT">Connecting…</b><span id="connS"></span></div></div>
+    <div class="timer" id="timer"><b id="tLeft">3:00</b><span id="tInfo">not started</span></div>
+  </div>
+  <div class="warn" id="warn"></div>
+
+  <div class="cur">
+    <small id="curK">Screen 1 / 11</small>
+    <h1 id="curT">Cover</h1>
+    <div class="deckline" id="deckLine">deck: —</div>
+    <div class="tgt" id="curTgt"></div>
+  </div>
+
+  <div class="nav">
+    <button id="prev" aria-label="Previous screen">◀ Prev</button>
+    <button id="next" class="next" aria-label="Next screen">Next ▶</button>
+  </div>
+
+  <div class="ctx">
+    <div class="panel" id="pSun">
+      <h2><span id="sunH">Sun</span> <i id="sunV">—</i></h2>
+      <div class="sunwrap">
+        <div class="presets">
+          <button id="pNoon">Noon<small>top</small></button>
+          <button id="pMorn">Morning<small>below 242 V</small></button>
+          <button id="pDawn">Dawn<small>before sunrise</small></button>
+        </div>
+        <div class="strip" id="sunStrip" aria-label="Sun height: touch or drag anywhere on the strip">
+          <div class="over" id="stripOver"></div>
+          <div class="lim" id="stripLim"><span>242 V</span></div>
+          <div class="ghost" id="stripGhost"><i>deck</i></div>
+          <span class="lab top">noon</span><span class="lab bot">dawn</span>
+          <div class="knob" id="stripKnob"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" id="pGuard">
+      <h2>SunGuard <i id="boxV">off</i></h2>
+      <button class="big guard" id="guard">SunGuard ON · where needed</button>
+      <div class="row"><button class="big guard" id="addBox" hidden>+ SunGuard everywhere</button></div>
+      <div class="row"><button class="big guard" id="tapBtn">ENA adjusts the transformer</button></div>
+      <div class="row"><button class="big sec" id="resetBoxes">Reset SunGuard</button></div>
+    </div>
+    <div class="panel" id="pStep">
+      <h2><span id="stepH">State</span> <i id="stepV">—</i></h2>
+      <div class="row" style="margin-top:0"><button class="big sec" id="stepPrev">◀ state</button><button class="big sec hot" id="stepNext">state ▶</button></div>
+      <div class="chips" id="stepChips"></div>
+    </div>
+    <div class="panel" id="pView" hidden>
+      <h2>View <i>drag to rotate</i></h2>
+      <div class="pad" id="viewPad"><span>↺ drag ↻</span></div>
+      <div class="row"><button class="big sec" id="viewReset">Reset view</button><button class="big sec" id="viewAuto" hidden>Auto-rotate</button></div>
+    </div>
+    <div class="panel" id="pCalc">
+      <h2>Calculator <i id="calcV">—</i></h2>
+      <div class="row" style="margin-top:0"><button class="big sec hot" id="cLoad">Load real feeder (start)</button></div>
+      <div style="margin-top:10px;font-size:13px;color:var(--mut)">Solar on this feeder, kWp</div>
+      <div class="slider calc" id="pvSlider" style="margin-top:6px"><div class="fill"></div><div class="thumb" id="pvThumb">48</div><span class="lab" style="left:10px">0</span><span class="lab" style="right:10px">300</span></div>
+      <div class="row"><button class="big sec hot" id="cFix">Apply cheapest fix</button><button class="big sec" id="cReset">Undo fix</button></div>
+      <div class="row"><button class="big sec" id="cTop">Scroll: top</button><button class="big sec" id="cOpts">Scroll: options</button></div>
+      <div class="kv" id="calcKv"></div>
+    </div>
+  </div>
+
+  <div class="tools">
+    <button class="chipb" id="qr">QR</button>
+    <button class="chipb" id="black">Black</button>
+    <button class="chipb" id="ping">Ping</button>
+    <button class="chipb" id="wake">Awake</button>
+    <button class="chipb" id="auto">Auto</button>
+    <button class="chipb danger" id="resetAll">Reset all</button>
+  </div>
+
+  <div class="tmr">
+    <button id="tStart">Start 3:00</button><button id="tPause">Pause</button><button id="tReset">Reset</button>
+  </div>
+
+  <div class="speech" id="speech"></div>
+
+  <div class="list" id="list"></div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="transport.js"></script>
+<script src="p2p.js"></script>
+<script src="assets/deck-data.js"></script>
+<script src="remote.js"></script>
+</body>
+</html>

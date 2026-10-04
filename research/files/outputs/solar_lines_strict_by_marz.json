@@ -1,0 +1,68 @@
+[
+ {
+  "marz": "Shirak",
+  "lines": 350,
+  "customers": 88402,
+  "per10k": 39.6
+ },
+ {
+  "marz": "Yerevan",
+  "lines": 1528,
+  "customers": 414332,
+  "per10k": 36.9
+ },
+ {
+  "marz": "Armavir",
+  "lines": 232,
+  "customers": 85588,
+  "per10k": 27.1
+ },
+ {
+  "marz": "Vayots Dzor",
+  "lines": 35,
+  "customers": 20485,
+  "per10k": 17.1
+ },
+ {
+  "marz": "Kotayk",
+  "lines": 207,
+  "customers": 122413,
+  "per10k": 16.9
+ },
+ {
+  "marz": "Ararat",
+  "lines": 110,
+  "customers": 87832,
+  "per10k": 12.5
+ },
+ {
+  "marz": "Aragatsotn",
+  "lines": 43,
+  "customers": 46420,
+  "per10k": 9.3
+ },
+ {
+  "marz": "Lori",
+  "lines": 64,
+  "customers": 102094,
+  "per10k": 6.3
+ },
+ {
+  "marz": "Tavush",
+  "lines": 26,
+  "customers": 49559,
+  "per10k": 5.2
+ },
+ {
+  "marz": "Syunik",
+  "lines": 12,
+  "customers": 50410,
+  "per10k": 2.4
+ },
+ {
+  "marz": "Gegharkunik",
+  "lines": 7,
+  "customers": 68002,
+  "per10k": 1.0
+ }
+]

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parts 3D test</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+  /* test-only page: a 1920×1080 stage scaled to the window like the deck, dark slide background from deck.css */
+  html,body{margin:0;height:100%;overflow:hidden;background:#0E1A15;font-family:'Plus Jakarta Sans','Segoe UI',system-ui,sans-serif}
+  #viewport{position:fixed;inset:0;overflow:hidden}
+  #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:50% 50%;transform:translate(-50%,-50%) scale(var(--s,1));overflow:hidden;
+    background:radial-gradient(1100px 680px at 88% -12%,rgba(255,181,71,.17),transparent 62%),radial-gradient(900px 640px at -8% 112%,rgba(52,199,123,.11),transparent 60%),linear-gradient(158deg,#172B21 0%,#0F1D17 55%,#0A1510 100%)}
+  body.light #stage{background:#fff}
+  #p3d{position:absolute;inset:0}
+  body.box #p3d{left:640px;top:150px;right:60px;bottom:90px;outline:1px dashed rgba(255,255,255,.25)}
+  #hl{position:absolute;left:106px;top:96px;margin:0;font-size:64px;line-height:1.05;font-weight:800;letter-spacing:-.028em;color:#F4F1E8;display:none;max-width:560px}
+  body.box #hl{display:block}
+  #ctl{position:fixed;left:12px;bottom:12px;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:calc(100vw - 24px - 260px);
+    padding:10px 12px;border-radius:14px;background:rgba(8,14,20,.86);color:#fff;font:600 14px/1.2 system-ui,Segoe UI,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  #ctl button{font:inherit;color:#fff;background:#2a3b33;border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 11px;cursor:pointer}
+  #ctl button.on{background:#1f7a4c;border-color:#5BE59A}
+  #hud{position:fixed;right:12px;bottom:12px;z-index:50;padding:8px 12px;border-radius:12px;background:rgba(8,14,20,.86);color:#9fe8c0;
+    font:600 13px/1.35 ui-monospace,Consolas,monospace;white-space:pre;min-width:220px}
+  body.clean #ctl,body.clean #hud{display:none}
+  #fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#F4F1E8;font-size:40px;font-weight:700}
+  body.failed #fallback{display:flex}
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <h2 id="hl">A small box next to the inverter</h2>
+    <div id="p3d"></div>
+    <div id="fallback">2D fallback (Parts3DFailed = true)</div>
+  </div>
+</div>
+
+<div id="ctl">
+  <button id="bEx" title="E">explode</button>
+  <button id="bAs" title="A">assemble</button>
+  <button data-h="0" title="0">0 MCU</button>
+  <button data-h="1" title="1">1 sensor</button>
+  <button data-h="2" title="2">2 link</button>
+  <button data-h="3" title="3">3 PSU</button>
+  <button data-h="4" title="4">4 case</button>
+  <button data-h="-1" title="X">no highlight</button>
+  <button id="bLab" class="on" title="L">labels</button>
+  <button id="bAct" class="on" title="P">active</button>
+  <button id="bCap" title="M">caption</button>
+  <button id="bBox" title="B">sub-box</button>
+  <button id="bTheme" title="T">light</button>
+  <button id="bRe" title="R">re-init</button>
+  <button id="bDis" title="D">dispose</button>
+</div>
+<div id="hud">loading…</div>
+
+<script>
+  /* stage scale like deck.js */
+  (function () {
+    const fit = () => document.documentElement.style.setProperty('--s', Math.min(innerWidth / 1920, innerHeight / 1080));
+    addEventListener('resize', fit); fit();
+    const q = new URLSearchParams(location.search);
+    if (q.has('clean')) document.body.classList.add('clean');
+    if (q.has('box')) document.body.classList.add('box');
+    if (q.get('theme') === 'light') document.body.classList.add('light');
+    /* adversarial: pretend WebGL2 is missing (must give Parts3DFailed = true, no exception, no console error) */
+    if (q.has('nowebgl2')) {
+      const orig = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (type, ...rest) { return type === 'webgl2' ? null : orig.call(this, type, ...rest); };
+    }
+  })();
+</script>
+<script type="module">
+  const q = new URLSearchParams(location.search);
+  const el = document.getElementById('p3d');
+  const hud = document.getElementById('hud');
+  const $ = (s) => document.querySelector(s);
+  const num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
+  const theme = () => (document.body.classList.contains('light') ? 'light' : 'dark');
+  let P = null;
+
+  async function boot() {
+    try {
+      await import('./assets/parts3d.js');
+      P = window.Parts3D;
+    } catch (e) { console.info('import failed', e); }
+    if (!P || window.Parts3DFailed) { document.body.classList.add('failed'); hud.textContent = 'Parts3DFailed = ' + window.Parts3DFailed; return; }
+    const ok = await P.init(el, {
+      theme: theme(), labels: !q.has('nolabels'), exploded: q.has('e'),
+      yaw: q.has('yaw') ? num('yaw') : undefined, elev: q.has('el') ? num('el') : undefined, fov: q.has('fov') ? num('fov') : undefined,
+      idle: !q.has('still'), debug: q.has('debug'),
+    });
+    if (!ok) { document.body.classList.add('failed'); hud.textContent = 'init → false, Parts3DFailed = ' + window.Parts3DFailed; return; }
+    if (q.has('h')) P.highlight(num('h', -1));
+    if (q.has('cap')) P.setCaption('≈ $43 of parts');
+  }
+  boot();
+
+  /* FPS meter: independent rAF counter + the module's own counter */
+  let n = 0, t0 = performance.now(), rafFps = 0;
+  (function loop(now) {
+    n++; if (now - t0 >= 1000) { rafFps = n * 1000 / (now - t0); n = 0; t0 = now; draw(); }
+    requestAnimationFrame(loop);
+  })(performance.now());
+  function draw() {
+    const s = window.Parts3D ? window.Parts3D.state() : {};
+    hud.textContent = `page rAF  ${rafFps.toFixed(0)} fps\nParts3D   ${s.fps ?? '-'} fps\nexploded  ${s.exploded ?? '-'}  hl ${s.highlight ?? '-'}\npx ratio  ${s.pixelRatio ?? '-'} (×${s.resolutionScale ?? '-'})\ncanvas    ${(s.size || []).join('×')}\ncalls ${s.drawCalls ?? '-'}  tris ${s.triangles ?? '-'}\nfailed    ${!!window.Parts3DFailed}\n${(s.gpu || '').slice(0, 42)}`;
+  }
+
+  const act = {
+    ex: () => P && P.explode(), as: () => P && P.assemble(),
+    hl: (i) => P && P.highlight(i),
+    lab: () => { const b = $('#bLab'); b.classList.toggle('on'); P && P.setLabels(b.classList.contains('on')); },
+    act: () => { const b = $('#bAct'); b.classList.toggle('on'); P && P.setActive(b.classList.contains('on')); },
+    cap: () => { const b = $('#bCap'); b.classList.toggle('on'); P && P.setCaption(b.classList.contains('on') ? '≈ $43 of parts' : ''); },
+    box: () => { document.body.classList.toggle('box'); },
+    theme: () => { document.body.classList.toggle('light'); act.re(); },
+    re: async () => { if (!P) return; P.dispose(); await P.init(el, { theme: theme(), labels: $('#bLab').classList.contains('on') }); },
+    dis: () => P && P.dispose(),
+  };
+  $('#bEx').onclick = act.ex; $('#bAs').onclick = act.as; $('#bLab').onclick = act.lab; $('#bAct').onclick = act.act;
+  $('#bCap').onclick = act.cap; $('#bBox').onclick = act.box; $('#bTheme').onclick = act.theme; $('#bRe').onclick = act.re; $('#bDis').onclick = act.dis;
+  document.querySelectorAll('[data-h]').forEach((b) => (b.onclick = () => act.hl(Number(b.dataset.h))));
+  addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'e') act.ex(); else if (k === 'a') act.as(); else if (k >= '0' && k <= '4') act.hl(Number(k)); else if (k === 'x') act.hl(-1);
+    else if (k === 'l') act.lab(); else if (k === 'p') act.act(); else if (k === 'm') act.cap(); else if (k === 'b') act.box();
+    else if (k === 't') act.theme(); else if (k === 'r') act.re(); else if (k === 'd') act.dis(); else if (k === 'c') document.body.classList.toggle('clean');
+  });
+</script>
+</body>
+</html>

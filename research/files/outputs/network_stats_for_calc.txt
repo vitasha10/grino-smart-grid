@@ -1,0 +1,17 @@
+TOTAL: customers 1,135,537 | TP 10(6)/0.4 kV 9,975 | LV lines 17,280 km
+  avg customers per TP 114 | avg LV km per TP 1.73
+  feeders per TP with >=10 customers (PSRC db): median 2, mean 2.1
+  -> avg LV length per main feeder ~ 718 m (all LV km attributed to main feeders)
+BY MARZ (TP count = PSRC db share scaled to 9,975):
+  Երևան        customers 414,332 | TP ~ 2580 | customers/TP ~ 161
+  Կոտայք       customers 122,413 | TP ~  978 | customers/TP ~ 125
+  Լոռի         customers 102,094 | TP ~  936 | customers/TP ~ 109
+  Շիրակ        customers  88,402 | TP ~ 1082 | customers/TP ~  82
+  Արարատ       customers  87,832 | TP ~  843 | customers/TP ~ 104
+  Արմավիր      customers  85,588 | TP ~  893 | customers/TP ~  96
+  Գեղարքունիք  customers  68,002 | TP ~  722 | customers/TP ~  94
+  Սյունիք      customers  50,410 | TP ~  504 | customers/TP ~ 100
+  Տավուշ       customers  49,559 | TP ~  497 | customers/TP ~ 100
+  Արագածոտն    customers  46,420 | TP ~  641 | customers/TP ~  72
+  Վայոց ձոր    customers  20,485 | TP ~  298 | customers/TP ~  69
+SOLAR (autonomous, end 2025): 50,059 sites, 640.1 MW | avg 12.8 kW/site | 4.4% of customers | avg 64 kW per TP | 0.56 kW per customer

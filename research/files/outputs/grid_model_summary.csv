@@ -1,0 +1,7 @@
+season,version,v_min,v_max,settlement_hours_out_of_limits,loss_kwh_day,load_kwh_day,loss_pct,max_trafo_loading
+dec,base,0.882,1.113,6,163.3,5801.3,2.81,53.7
+dec,tap,0.916,1.113,4,161.6,5801.3,2.79,53.5
+dec,tap+inverter,0.916,1.093,0,165.0,5801.3,2.84,53.5
+jun,base,0.881,1.145,11,130.1,3887.8,3.35,35.6
+jun,tap,0.881,1.097,2,129.7,3887.8,3.34,35.6
+jun,tap+inverter,0.881,1.078,2,136.2,3887.8,3.5,35.6

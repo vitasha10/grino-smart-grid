@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Street 3D test</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="deck.css">
+<style>
+  /* test-only chrome; the deck itself is styled by deck.css */
+  body{background:#0E1A15}
+  #street{opacity:1!important}
+  #ctl{position:fixed;left:12px;bottom:12px;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:calc(100vw - 24px);
+    padding:10px 12px;border-radius:14px;background:rgba(8,14,20,.86);color:#fff;font:600 14px/1.2 system-ui,Segoe UI,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  #ctl button{font:inherit;color:#fff;background:#2a3b33;border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 11px;cursor:pointer}
+  #ctl button.on{background:#1f7a4c;border-color:#5BE59A}
+  #ctl input[type=range]{width:220px}
+  #ctl .m{font-variant-numeric:tabular-nums;min-width:62px;display:inline-block}
+  #hud{position:fixed;right:12px;bottom:12px;z-index:50;padding:8px 12px;border-radius:12px;background:rgba(8,14,20,.86);color:#9fe8c0;
+    font:600 13px/1.35 ui-monospace,Consolas,monospace;white-space:pre}
+  body.clean #ctl,body.clean #hud{display:none}
+  body.notext .slide.scene{display:none}
+  /* drag on S2/S5 must reach the 3D canvas under the slide text (the deck needs the same rule) */
+  body.r3d .slide.scene{pointer-events:none}
+</style>
+</head>
+<body data-screen="s2">
+<div id="viewport">
+  <div id="stage">
+    <div id="street" aria-hidden="true"></div>
+    <!-- copies of the S2 / S5 overlays from index.html (only to check the composition; not used by the deck) -->
+    <section class="slide scene active" data-id="s2" aria-label="Street at noon">
+      <div class="kicker a" style="--d:.1s">An ordinary Armenian street</div>
+      <h2 class="hl a" style="--d:.2s">Sun rises.<br><span class="hl-red">Voltage breaks the limit.</span></h2>
+      <div class="src a" style="--d:.6s"><span class="chip">model</span> illustrative street feeder: last house 236 → 252 V on a clear June day (own pandapower model) · legal band 198–242 V (GOST 32144-2013)</div>
+    </section>
+    <section class="slide scene" data-id="s5" aria-label="SunGuard">
+      <div class="kicker a" style="--d:.1s">SunGuard · a small box next to the inverter</div>
+      <h2 class="hl a" style="--d:.2s">Throttles just enough,<br><span class="hl-green">shared fairly.</span></h2>
+      <div class="s5-inset a" style="--d:.5s">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M14 30a14 14 0 0 1 20 0"/><path d="M8 24a22 22 0 0 1 32 0" opacity=".6"/><circle cx="24" cy="36" r="3" fill="currentColor"/></g></svg>
+        <div><b>No internet</b><span>radio 2.4 GHz, box to box</span></div>
+      </div>
+      <div class="s5-state a" style="--d:.4s"><span class="sg-dot"></span><span id="sgLabel">SunGuard OFF</span></div>
+      <div class="src a" style="--d:.6s"><span class="chip">model</span> illustrative: the box measures voltage every second, turns on the inverter's voltage-control mode, then lowers output just enough; reduction shared equally (own pandapower model)</div>
+    </section>
+  </div>
+</div>
+
+<div id="ctl">
+  <span>sun</span><input id="sun" type="range" min="-0.15" max="1" step="0.01" value="0.15"><span class="m" id="sunv">0.15</span>
+  <button id="bSweep" title="S">sweep 0→1</button>
+  <button id="bGuard" title="G">guard</button>
+  <button id="bBoxes" title="B">boxes</button>
+  <button id="bPulse" title="P">pulse</button>
+  <button id="bAll" title="R">guard all</button>
+  <button id="bHl" title="K">panels working</button>
+  <button id="bTap" title="T">ENA tap</button>
+  <button id="bPre" title="N">pre-dawn</button>
+  <button id="bAdd" title="+">+SunGuard</button>
+  <button id="bZero" title="-">0 boxes</button>
+  <button id="bActive" class="on" title="A">active</button>
+  <button id="bScene" title="5">S2/S5</button>
+  <button id="bText" class="on" title="H">slide text</button>
+  <button id="b2d" title="F">force 2D</button>
+  <button id="bL" title="[">rotate -30</button><button id="bR" title="]">rotate +30</button><button id="bUp" title="U">pitch</button><button id="bHome" title="V">reset view</button><button id="bAuto" class="on" title="O">auto-rotate</button>
+  <span style="opacity:.7">keys: ←/→ sun · 0–9 · N pre-dawn · S G R K B P + − A H F · [ ] U V O view · C clean · drag/wheel = orbit/zoom</span>
+</div>
+<div id="hud">loading…</div>
+
+<script src="street.js"></script>
+<script>
+  /* the deck's own scaling of the 1920×1080 stage (same rule as deck.js) */
+  (function () {
+    function fit() { document.documentElement.style.setProperty('--s', Math.min(innerWidth / 1920, innerHeight / 1080)); }
+    addEventListener('resize', fit); fit();
+    window.Street.init(document.getElementById('street'));
+    window.Street.setActive(true);
+  })();
+</script>
+<script type="module">
+  const q = new URLSearchParams(location.search);
+  const $ = (id) => document.getElementById(id);
+  const st = { guard: q.get('guard') === '1', boxes: q.get('boxes') === '1', active: true, auto: q.get('auto') !== '0' };
+  if (q.has('clean')) document.body.classList.add('clean');
+  if (q.get('text') === '0') { document.body.classList.add('notext'); $('bText').classList.remove('on'); }
+  if (q.get('screen') === 's5') setScreen('s5');
+  const sun0 = q.has('sun') ? +q.get('sun') : 0.15;
+  Street.setSun(sun0, 0); Street.setBoxes(st.boxes); Street.setGuard(st.guard);
+  const nBox = q.has('n') ? +q.get('n') : null;
+
+  function setScreen(id) {
+    document.body.dataset.screen = id;
+    document.querySelectorAll('.slide.scene').forEach((s) => s.classList.toggle('active', s.dataset.id === id));
+  }
+  function syncUI() {
+    $('bGuard').classList.toggle('on', st.guard); $('bBoxes').classList.toggle('on', st.boxes); $('bActive').classList.toggle('on', st.active);
+    document.body.classList.toggle('guard', st.guard);
+    $('sgLabel').textContent = st.guard ? 'SunGuard ON' : 'SunGuard OFF';
+  }
+  function sun(v, ms) { v = Math.max(-0.15, Math.min(1, v)); Street.setSun(v, ms == null ? 300 : ms); $('sun').value = v; $('sunv').textContent = v.toFixed(2); }
+  const act = {
+    sweep() { Street.setSun(0, 0); setTimeout(() => (Street.sweepSun ? Street.sweepSun(1, 5000) : Street.setSun(1, 5000)), 60); $('sun').value = 1; $('sunv').textContent = '1.00'; },
+    guard() { st.guard = !st.guard; Street.setGuard(st.guard); syncUI(); },
+    all() { const on = !(Street.state && Street.state().stage >= 2); if (Street.setGuardAll) Street.setGuardAll(on); st.guard = on || st.guard; syncUI(); },
+    hl() { st.hl = !st.hl; Street.highlightPanels && Street.highlightPanels(st.hl); $('bHl').classList.toggle('on', st.hl); },
+    pre() { sun(-0.12, 0); },
+    tap() { st.tap = !st.tap; Street.setTap && Street.setTap(st.tap); $('bTap').classList.toggle('on', st.tap); },
+    yawL() { Street.orbitBy && Street.orbitBy(-30, 0); }, yawR() { Street.orbitBy && Street.orbitBy(30, 0); },
+    pitch() { const v = Street.state().view; Street.setView && Street.setView(v.yaw, v.pitch > 45 ? 30 : 60, 700); },
+    home() { Street.resetView && Street.resetView(); }, auto() { st.auto = !st.auto; Street.setAutoRotate && Street.setAutoRotate(st.auto); $('bAuto').classList.toggle('on', st.auto); },
+    add() { if (Street.addBox) Street.addBox(); st.guard = Street.boxes && Street.boxes() > 0; syncUI(); },
+    zero() { if (Street.setBoxCount) Street.setBoxCount(0); st.guard = false; syncUI(); },
+    boxes() { st.boxes = !st.boxes; Street.setBoxes(st.boxes); syncUI(); },
+    pulse() { Street.pulse(); },
+    active() { st.active = !st.active; Street.setActive(st.active); syncUI(); },
+    scene() { setScreen(document.body.dataset.screen === 's2' ? 's5' : 's2'); },
+    text() { document.body.classList.toggle('notext'); $('bText').classList.toggle('on', !document.body.classList.contains('notext')); },
+    force2d() { if (Street._s3d) Street._s3d._fail('manual test'); }
+  };
+  $('sun').addEventListener('input', (e) => sun(+e.target.value, 120));
+  $('bSweep').onclick = act.sweep; $('bGuard').onclick = act.guard; $('bBoxes').onclick = act.boxes; $('bPulse').onclick = act.pulse;
+  $('bActive').onclick = act.active; $('bAdd').onclick = act.add; $('bAll').onclick = act.all; $('bHl').onclick = act.hl; $('bTap').onclick = act.tap; $('bPre').onclick = act.pre; $('bL').onclick = act.yawL; $('bR').onclick = act.yawR; $('bUp').onclick = act.pitch; $('bHome').onclick = act.home; $('bAuto').onclick = act.auto; $('bZero').onclick = act.zero; $('bScene').onclick = act.scene; $('bText').onclick = act.text; $('b2d').onclick = act.force2d;
+  addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowUp') sun(+$('sun').value + 0.05);
+    else if (k === 'ArrowLeft' || k === 'ArrowDown') sun(+$('sun').value - 0.05);
+    else if (/^[0-9]$/.test(k)) sun(k === '0' ? 1 : +k / 10, 600);
+    else if (k === 's' || k === 'S') act.sweep();
+    else if (k === 'g' || k === 'G') act.guard();
+    else if (k === 'b' || k === 'B') act.boxes();
+    else if (k === 'p' || k === 'P') act.pulse();
+    else if (k === '+' || k === '=') act.add();
+    else if (k === 'r' || k === 'R') act.all();
+    else if (k === 't' || k === 'T') act.tap();
+    else if (k === 'k' || k === 'K') act.hl(); else if (k === 'n' || k === 'N') act.pre();
+    else if (k === '[') act.yawL(); else if (k === ']') act.yawR(); else if (k === 'u' || k === 'U') act.pitch();
+    else if (k === 'v' || k === 'V') act.home(); else if (k === 'o' || k === 'O') act.auto();
+    else if (k === '-') act.zero();
+    else if (k === 'a' || k === 'A') act.active();
+    else if (k === 'h' || k === 'H') act.text();
+    else if (k === 'f' || k === 'F') act.force2d();
+    else if (k === '5') act.scene();
+    else if (k === 'c' || k === 'C') document.body.classList.toggle('clean');
+  });
+  syncUI(); $('sun').value = sun0; $('sunv').textContent = sun0.toFixed(2);
+
+  /* FPS meter: real rAF rate of the page while the scene renders */
+  const fps = { n: 0, t0: performance.now(), v: 0 };
+  (function loop(t) {
+    fps.n++;
+    if (t - fps.t0 >= 1000) { fps.v = fps.n * 1000 / (t - fps.t0); fps.n = 0; fps.t0 = t; hud(); }
+    requestAnimationFrame(loop);
+  })(performance.now());
+  window.__fps = () => fps.v;
+  let gpu = '';
+  function hud() {
+    const s = Street.state ? Street.state() : {};
+    const v = Street.volts ? Street.volts() : null;
+    const d = Street._s3d ? Street._s3d._debug() : null;
+    const info = d && d.info ? d.info.render : null;
+    $('hud').textContent = (Street.is3D ? '3D' : '2D' + (window.Street3DFailed ? ' (3D failed)' : '')) + '  fps ' + fps.v.toFixed(0) +
+      (s.quality != null ? '  q' + s.quality : '') + (info ? '  calls ' + info.calls + '  tris ' + (info.triangles / 1000).toFixed(0) + 'k' : '') +
+      '\nsun ' + (s.sun != null ? s.sun.toFixed(2) : '?') + '  stage ' + (s.stage != null ? s.stage : '?') + '  boxes ' + (Street.boxes ? Street.boxes() : '?') + '  cut ' + (Street.cutPercent ? Street.cutPercent() + '%' : '?') + (s.view ? '  view ' + s.view.yaw.toFixed(0) + '/' + s.view.pitch.toFixed(0) + ' d' + s.view.dist.toFixed(0) : '') +
+      '\nV ' + (v ? v.map((x) => x.toFixed(1)).join(' ') : '?') + (gpu ? '\n' + gpu : '');
+  }
+
+  /* upgrade exactly like the deck snippet in README_3D.md */
+  if (!q.has('flat')) {
+    try {
+      const m = await import('./street3d.js');
+      const ok = await m.upgrade(document.getElementById('street'), { watchdog: !q.has('nowd'), active: true, autoRotate: st.auto, scrim: q.get('scrim') || false,
+        home: q.get('home') ? (([y, p, d, x, z]) => ({ yaw: y, pitch: p, dist: d, target: [x, 0, z] }))(q.get('home').split(',').map(Number)) : undefined });
+      if (ok) { document.body.classList.add('r3d'); Street.setSun(sun0, 0); }
+      if (ok && Street._s3d) {
+        const gl = Street._s3d._debug().renderer.getContext();
+        const ext = gl.getExtension('WEBGL_debug_renderer_info');
+        gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+      }
+      if (nBox != null && Street.setBoxCount) Street.setBoxCount(nBox);
+      if (q.get('all') === '1' && Street.setGuardAll) Street.setGuardAll(true);
+      if (q.get('tap') === '1' && Street.setTap) Street.setTap(true, 0);
+      if (q.get('hl') === '1' && Street.highlightPanels) { st.hl = true; Street.highlightPanels(true, +(q.get('hlms') || 600)); }
+      if (q.has('view') && Street.setView) { const v = q.get('view').split(',').map(Number); Street.setView(v[0], v[1], 0, v[2]); }
+      window.__ready = ok ? '3d' : '2d';
+    } catch (e) { window.Street3DFailed = true; window.__ready = '2d'; console.info('[street3d] 2D fallback:', e && e.message); }
+  } else window.__ready = '2d';
+  hud();
+</script>
+</body>
+</html>
