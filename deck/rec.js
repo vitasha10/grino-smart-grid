@@ -196,7 +196,7 @@
         msg('Building the replay on the server…');
         fetch(API + '/' + encodeURIComponent(session) + '/build?k=' + encodeURIComponent(KEY), { method: 'POST', cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
-          .then(function (j) { REC.built = j; msg('Uploaded: ' + REC.recorded + ' segments · ' + (j && typeof j.fast === 'string' && j.fast ? 'replay ×5 ready' : 'the deck builds the replay on s10b'), 'ok'); })
+          .then(function (j) { REC.built = j; msg('Uploaded: ' + REC.recorded + ' segments · ' + (j && typeof j.fast === 'string' && j.fast ? 'replay ready' : 'the deck builds the replay on s10b'), 'ok'); })
           .catch(function (e) { msg('Build failed (' + (e && e.message || e) + ') — the deck can build it again', 'bad'); })
           .then(function () { if (canvas) { clearInterval(drawT); canvas = null; } if (srcVideo) { srcVideo.remove(); srcVideo = null; } $('go').disabled = false; $('go').textContent = '● Record'; $('go').classList.remove('stop'); render(); });
       });
