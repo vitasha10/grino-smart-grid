@@ -113,7 +113,7 @@ window.GRINO = {
      earlier: 'Armenia’s solar boom is hitting the wires' (metaphor) · 'Rooftop solar is pushing street voltage too high' /
               'A low-cost way to let Armenia’s streets take more rooftop solar — with safe voltage in every home.' */
   COVER_TITLE: 'Solar on the roof. Safe voltage at home.',
-  COVER_LINE: 'At noon, rooftop solar pushes street voltage past the legal limit — appliances break and inverters shut down. A small box at the inverter keeps the home safe and the panels working.',
+  COVER_LINE: 'At noon, rooftop solar pushes street voltage past the limit — appliances break and inverters shut down. A small box at the inverter keeps the home safe and the panels working.',
   COVER: {
     title: 'Rooftop solar is pushing street voltage too high',
     description: 'A low-cost way to let Armenia’s streets take more rooftop solar — with safe voltage in every home.',
@@ -157,6 +157,7 @@ window.GRINO = {
   var g = window.GRINO;
   var k = (p.get('k') || '').trim();
   g.TOPIC = /^[A-Za-z0-9_-]{6,60}$/.test(k) ? k.toLowerCase() : '';   /* relay topics: [a-z0-9_-], + '-cmd' / '-ack' */
+  g.KEY = g.TOPIC ? k : '';   /* the raw key for the recording API (/grino/rec/...?k=) — never shown */
   var sd = (p.get('snapdir') || '').trim();   /* rehearsal/test: take the 3D snapshots from another folder */
   if (sd && /^(file:|https?:|[a-z0-9_.\/-]+$)/i.test(sd)) {
     if (!/\/$/.test(sd)) sd += '/';

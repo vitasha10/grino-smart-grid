@@ -290,6 +290,8 @@
   /* ---------- toggles ---------- */
   $('guard').onclick = function () { R.lines = R.lines ? 0 : 1; R.guard = R.lines > 0; send('lines', R.lines, { discrete: true }); buzz(); };
   $('addBox').onclick = function () { R.lines = 2; R.guard = true; send('lines', 2, { discrete: true }); buzz(); };
+  $('recBtn').onclick = function () { send('rec', 'on', { discrete: true }); buzz(); };
+  $('recOff').onclick = function () { send('rec', 'off', { discrete: true }); buzz(); };
   $('tapBtn').onclick = function () { R.lines = 3; R.guard = true; send('lines', 3, { discrete: true }); buzz(); };
   function stepSend(v) { send('step', v, { discrete: true }); buzz(); }
   $('stepPrev').onclick = function () { if (R.step) R.step.k = Math.max(0, R.step.k - 1); stepSend({ d: -1 }); render(); };
@@ -389,6 +391,8 @@
     $('pGuard').classList.toggle('on', !!sc.guard);
     $('pGuard').style.order = sc.guard ? '-1' : '';          /* S5: SunGuard buttons right under Next, the sun strip below them */
     $('pCalc').classList.toggle('on', !!sc.calc);
+    $('pRec').classList.toggle('on', sc.id === 's11');
+    var rs = d && d.caps && d.caps.rec; $('recV').textContent = rs === 'building' ? 'building on the server…' : rs === 'playing' ? 'playing on the deck' : rs === 'none' ? 'no recording yet' : '—';
     $('sunStrip').classList.toggle('off', R.rl);
     $('pvSlider').classList.toggle('off', R.rl);
     paintStrip(R.sun, d && typeof d.sun === 'number' ? d.sun : null);

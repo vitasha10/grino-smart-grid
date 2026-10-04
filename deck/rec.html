@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.ico">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1511">
+<meta name="color-scheme" content="dark">
+<title>Grino #27 · Recorder</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+:root{--bg:#0B1511;--card:#13231C;--line:rgba(255,255,255,.12);--ink:#F4F1E8;--mut:rgba(244,241,232,.62);--sun:#FFB547;--ok:#34C77B;--red:#EF4B4F;--amber:#F5A524;
+  --font:'Plus Jakarta Sans','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-variant-numeric:tabular-nums}
+body{display:flex;flex-direction:column;padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));gap:8px;-webkit-user-select:none;user-select:none}
+.stage{position:relative;flex:1;min-height:0;border-radius:16px;overflow:hidden;background:#000}
+#preview{width:100%;height:100%;object-fit:contain;background:#000}
+.badge{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.6);font-size:14px;font-weight:700}
+.badge.rec{background:rgba(239,75,79,.9)}
+.hint{position:absolute;inset:auto 10px 10px 10px;padding:8px 12px;border-radius:12px;background:rgba(245,165,36,.92);color:#1A1205;font-weight:800;font-size:15px;text-align:center;display:none}
+@media (orientation:portrait){.hint{display:block}}
+.bar{display:flex;gap:8px;align-items:stretch}
+#go{flex:1.4;min-height:84px;border:0;border-radius:20px;font:800 26px var(--font);background:var(--red);color:#fff}
+#go.stop{background:#fff;color:#0B1511}
+#go:disabled{opacity:.45}
+.stats{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.st{border-radius:14px;background:var(--card);border:1px solid var(--line);padding:6px 4px;text-align:center}
+.st b{display:block;font-size:22px;font-weight:800}.st span{font-size:11px;color:var(--mut)}
+#msg{font-size:13px;color:var(--mut);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#msg.bad{color:#FFB3B3}#msg.ok{color:#7FEFB0}
+.nokey{margin:auto;max-width:420px;text-align:center;font-size:20px;font-weight:700;line-height:1.4}
+@media (orientation:landscape){body{flex-direction:row}.side{width:38%;display:flex;flex-direction:column;gap:8px;justify-content:center}.bar{flex-direction:column}#go{min-height:110px}}
+@media (orientation:portrait){.side{display:flex;flex-direction:column;gap:8px}}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <video id="preview" muted playsinline autoplay></video>
+  <div class="badge" id="badge">camera off</div>
+  <div class="hint">Turn the phone sideways (landscape) for a wide shot</div>
+</div>
+<div class="side">
+  <div class="bar">
+    <button id="go" disabled>● Record</button>
+    <div class="stats">
+      <div class="st"><b id="nRec">0</b><span>recorded</span></div>
+      <div class="st"><b id="nUp">0</b><span>uploaded</span></div>
+      <div class="st"><b id="nQ">0</b><span>queued</span></div>
+    </div>
+  </div>
+  <div id="msg"></div>
+</div>
+<script src="config.js"></script>
+<script src="rec.js"></script>
+</body>
+</html>

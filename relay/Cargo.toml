@@ -6,7 +6,7 @@ description = "Tiny pub/sub relay (ntfy-compatible subset + WebSocket) for the t
 
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal", "fs", "process"] }
 tower-http = { version = "0.6", features = ["cors"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 serde = { version = "1", features = ["derive"] }

@@ -860,10 +860,54 @@
   }
   document.addEventListener('keyup', function (e) { if (KH && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) keySunUp(); });
   window.addEventListener('blur', keySunUp);
+  /* ---------------- v10: "Recorded live" on S11 ----------------
+     build the latest session on the server (it waits for the x10 copies), then loop the fast copy muted
+     (or the full one at playbackRate 10). No key / no recording / any error -> the panel stays hidden. */
+  var RECV = { state: 'idle', busy: false, url: '' };
+  window.DECK.rec = RECV;
+  function recApi(path) { return (cfg.RELAY_URL || '').replace(/\/+$/, '') + '/rec/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'k=' + encodeURIComponent(cfg.KEY || ''); }
+  function recAbs(u) { try { return new URL(u, (cfg.RELAY_URL || '').replace(/\/+$/, '') + '/').href; } catch (e) { return u; } }
+  function recFetch(url, opts, ms) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null, t = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms || 20000);
+    opts = opts || {}; opts.cache = 'no-store'; if (ctrl) opts.signal = ctrl.signal;
+    return fetch(url, opts).then(function (r) { clearTimeout(t); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }, function (e) { clearTimeout(t); throw e; });
+  }
+  function recShow(on) { body.classList.toggle('rec-on', !!on); $('#recPanel').hidden = !on; }
+  function recPlay() {
+    if (!cfg.KEY || RECV.busy) return;
+    RECV.busy = true; RECV.state = 'building'; publishState();
+    var v = $('#recVideo');
+    recFetch(recApi('latest'), null, 15000).then(function (j) {
+      if (!j || !j.session) throw new Error('no recording');
+      RECV.session = j.session;
+      return recFetch(recApi(encodeURIComponent(j.session) + '/build'), { method: 'POST' }, 90000).catch(function () { return j; });
+    }).then(function (b) {
+      var fast = b && (b.fast || b.fast_full), full = b && b.full;
+      if (!fast && !full) throw new Error('nothing built');
+      RECV.url = recAbs(fast || full); RECV.rate = fast ? 1 : 10;
+      return new Promise(function (res, rej) {
+        var done = false, to = setTimeout(function () { if (!done) { done = true; rej(new Error('video did not load')); } }, 20000);
+        v.onloadeddata = function () { if (done) return; done = true; clearTimeout(to); res(); };
+        v.onerror = function () { if (done) return; done = true; clearTimeout(to); rej(new Error('video error')); };
+        v.src = RECV.url; v.muted = true; v.loop = true; v.playbackRate = RECV.rate; v.defaultPlaybackRate = RECV.rate;
+        try { v.load(); } catch (e) {}
+      });
+    }).then(function () {
+      v.playbackRate = RECV.rate;
+      var p = v.play(); if (p && p.catch) p.catch(function () {});
+      recShow(true); RECV.state = 'playing';
+    }).catch(function (e) {
+      recShow(false); RECV.state = 'none'; RECV.err = String(e && e.message || e);
+      console.info('[deck] recording:', RECV.err);
+    }).then(function () { RECV.busy = false; publishState(); });
+  }
+  function recHide() { var v = $('#recVideo'); try { v.pause(); } catch (e) {} recShow(false); RECV.state = 'idle'; publishState(); }
+
   /* ---------------- keyboard ---------------- */
   function onKey(e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     var k = e.key, handled = true;
+    if (e.shiftKey && (k === 'V' || k === 'v')) { if (body.classList.contains('rec-on')) { recHide(); broadcastCmd('rec', 'off'); } else { recPlay(); broadcastCmd('rec', 'on'); } e.preventDefault(); return; }
     switch (k) {
       case 'ArrowUp': case 'ArrowDown':
         if (isScene(ids[state.i])) keySunDown(k === 'ArrowUp' ? 1 : -1, e.repeat);   /* smooth: the spring follows */
@@ -949,7 +993,7 @@
   }
   function snapshot() {
     var stepInfo = { k: STEP.k, n: STEP.n };
-    var caps = { orbit: !!(window.Street && typeof Street.orbitBy === 'function'), autoRotate: !!(window.Street && typeof Street.setAutoRotate === 'function') ? (state.autoRotate !== false) : null, lines: hasLinesApi(), addBox: !!(window.Street && typeof Street.addBox === 'function'), renderer: window.DECK.renderer || '2d', sun242: sun242() };
+    var caps = { orbit: !!(window.Street && typeof Street.orbitBy === 'function'), autoRotate: !!(window.Street && typeof Street.setAutoRotate === 'function') ? (state.autoRotate !== false) : null, lines: hasLinesApi(), addBox: !!(window.Street && typeof Street.addBox === 'function'), renderer: window.DECK.renderer || '2d', sun242: sun242(), rec: RECV.state };
     return { screen: state.i, id: ids[state.i], step: stepInfo, sun: Math.round(state.sun * 100) / 100, guard: state.lines > 0, lines: state.lines, boxes: state.lines * 3, caps: caps, resets: window.DECK.resets || 0, auto: AP.on, qr: state.qr, black: state.black,
       calc: ids[state.i] === 's7' ? calcState() : { avail: !!calcDoc() } };
   }
@@ -1020,6 +1064,7 @@
         /* relay: apply within ~100 ms (no long easing); ntfy: ease over the (slow) sample interval */
         setSun(val, via === 'p2p' ? 40 : via === 'relay' ? 100 : (ms != null ? ms : Math.round(1000 / window.GrinoTransport.sunHz(via) * 1.05)));
         break;
+      case 'rec': if (v === 'off') recHide(); else recPlay(); break;
       case 'sweep': setSun(v && v.to != null ? v.to : 1, v && v.ms ? v.ms : 7000); break;
       case 'guard': setGuard(typeof v === 'boolean' ? v : !state.guard); break;
       case 'addbox': addBox(); break;

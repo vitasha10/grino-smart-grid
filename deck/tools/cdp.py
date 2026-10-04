@@ -14,7 +14,7 @@ CANDIDATES = [
 
 
 class Browser:
-    def __init__(self, port=9333, exe=None):
+    def __init__(self, port=9333, exe=None, extra=None):
         exe = exe or next((p for p in CANDIDATES if os.path.exists(p)), None)
         if not exe:
             raise SystemExit("Edge/Chrome not found")
@@ -22,8 +22,8 @@ class Browser:
         self.prof = tempfile.mkdtemp(prefix="grino_cdp_")
         self.proc = subprocess.Popen([exe, "--headless=new", f"--remote-debugging-port={port}", "--remote-allow-origins=*",
                                       f"--user-data-dir={self.prof}", "--no-first-run", "--no-default-browser-check",
-                                      "--disable-extensions", "--hide-scrollbars", "--mute-audio", "--force-color-profile=srgb",
-                                      "about:blank"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                      "--disable-extensions", "--hide-scrollbars", "--mute-audio", "--force-color-profile=srgb"]
+                                     + list(extra or []) + ["about:blank"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         tabs = None
         for _ in range(100):
             try:

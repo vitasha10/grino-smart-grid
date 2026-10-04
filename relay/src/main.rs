@@ -1,6 +1,7 @@
 //! grino-relay — pub/sub relay for the pitch-deck remote: POST /grino/{topic},
 //! GET /grino/{topic}/json|sse|ws.
 //! Bind: env GRINO_BIND (default 127.0.0.1:8790). nginx terminates TLS in front.
+mod rec;
 mod relay;
 
 use axum::{routing::get, Router};
@@ -16,6 +17,7 @@ async fn main() -> std::io::Result<()> {
     let app: Router = Router::new()
         .route("/grino/__health", get(health))
         .merge(relay::routes(&cfg))
+        .merge(rec::routes())
         .layer(CorsLayer::permissive());
     let bind = std::env::var("GRINO_BIND").unwrap_or_else(|_| "127.0.0.1:8790".into());
     let listener = tokio::net::TcpListener::bind(&bind).await?;

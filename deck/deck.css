@@ -815,3 +815,13 @@ body.dcycle .s5-dcap{opacity:1;transform:translate(-50%,0)}
 .eco-l{left:110px;width:700px}.eco-r2{left:850px;width:960px}.eco-r2 .eco-r b{font-size:34px}.eco-r2 .eco-r span{font-size:26px}.eco-later{top:872px;font-size:30px}
 .slide.scene .src{z-index:6;background:rgba(246,243,236,.86);color:#2c3a33;text-shadow:none;padding:4px 14px;border-radius:10px;left:0;right:0;margin:0 auto;width:max-content;max-width:1700px}
 .s5-dcap{top:876px}
+
+/* v10: "Recorded live" on S11 — only when a recording is ready (body.rec-on); otherwise the slide is unchanged */
+.s11-rec{position:absolute;right:100px;top:226px;width:650px;border-radius:24px;overflow:hidden;background:#000;box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+.s11-rec video{display:block;width:650px;height:366px;object-fit:cover;background:#000}
+.rec-cap{padding:12px 18px;font-size:22px;font-weight:700;line-height:1.3;color:#F4F1E8;background:#13231C}
+.rec-cap i{display:inline-block;width:12px;height:12px;border-radius:50%;background:#EF4B4F;margin-right:10px;vertical-align:1px;box-shadow:0 0 0 4px rgba(239,75,79,.25)}
+body.rec-on .s11-rec{display:block}
+body.rec-on .s11-qr{top:690px;width:650px;padding:14px 18px;display:flex;align-items:center;gap:22px;text-align:left}
+body.rec-on .s11-qr .qr-box{width:230px;height:230px;margin:0;flex:none}
+body.rec-on .s11-qr .qr-cap{margin-top:0;font-size:32px}

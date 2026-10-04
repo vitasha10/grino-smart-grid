@@ -9,7 +9,7 @@ Sources: FACTS.md. "One customer in three" = industry expert estimate (F4c); 150
 We are team twenty-seven, Grino: Mikayel, Vitaliy, Zakhar, Ara, and I am Radik. Our question: how to keep Armenian homes safe as rooftop solar grows?
 
 **[S2 · Street at noon — 0:14]** *(pre-dawn; Radik raises his hand — the operator brings the sun up; the far ends of the lines turn red)*
-Here is an Armenian village before sunrise. The sun comes up, the roofs push power into the same thin wires, and at the end of each street the voltage climbs past two hundred forty-two volts, the legal limit.
+Here is an Armenian village before sunrise. The sun comes up, the roofs push power into the same thin wires, and at the end of each street the voltage climbs past two hundred forty-two volts — the limit.
 
 **[S3 · The numbers — 0:32]**
 Industry experts estimate that one customer in three gets voltage above the limit; the regulator's own June data show at least a hundred and fifty thousand. And last year ENA received almost four thousand claims for appliances damaged by poor power quality.
