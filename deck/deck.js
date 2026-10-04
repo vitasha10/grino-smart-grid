@@ -862,7 +862,7 @@
   document.addEventListener('keyup', function (e) { if (KH && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) keySunUp(); });
   window.addEventListener('blur', keySunUp);
   /* ---------------- v10: "Recorded live" on S11 ----------------
-     build the latest session on the server (it waits for the x10 copies), then loop the fast copy muted
+     build the latest session on the server (it waits for the x5 copies), then loop the fast copy muted
      (or the full one at playbackRate 10). No key / no recording / any error -> the panel stays hidden. */
   var RECV = { state: 'idle', busy: false, url: '' };
   window.DECK.rec = RECV;
@@ -882,7 +882,7 @@
   function str(u) { return typeof u === 'string' && u.length > 1 ? u : ''; }
   function recBuildOnce() {   /* one logical build: retries only while the server's fast copies are still pending */
     if (!cfg.KEY) return Promise.reject(new Error('no key'));
-    return recFetch(recApi('latest'), null, 15000).then(function (j) {
+    return recFetch(recApi('current'), null, 15000).then(function (j) {   /* selected on the remote, else the latest */
       if (!j || !j.session) throw new Error('no recording');
       var s = encodeURIComponent(j.session), tries = 0;
       function attempt() {
@@ -896,10 +896,10 @@
             return { urls: srcs.map(recAbs), rate: 1, session: j.session, n: (b.segments && b.segments.length) || b.segments || 0, t: Date.now() };
           }
           if (++tries < 3) return new Promise(function (r) { setTimeout(r, 1000); }).then(attempt);   /* copies still pending: ~3 s each */
-          /* no fast copy at all: the full-length file at x10 (server stitches it only with ?full=1) */
+          /* no fast copy at all: the full-length file at x5 (server stitches it only with ?full=1) */
           return recFetch(recApi(s + '/build?full=1'), { method: 'POST' }, 90000).then(function (f) {
             var full = str(f && f.full); if (!full) throw new Error('nothing built');
-            return { urls: [recAbs(full)], rate: 10, session: j.session, n: 0, t: Date.now() };
+            return { urls: [recAbs(full)], rate: 5, session: j.session, n: 0, t: Date.now() };
           });
         });
       }
@@ -914,8 +914,12 @@
           var to = setTimeout(fail, 3000);
           nv.onplaying = function () {
             if (done) return; done = true; clearTimeout(to);
-            var old = $('#recVideo'); nv.id = 'recVideo';
-            old.parentNode.replaceChild(nv, old); try { old.pause(); old.removeAttribute('src'); old.load(); } catch (e) {}
+            var old = $('#recVideo'), box = $('#recBox');
+            if (body.classList.contains('rec-on') && !reduced) {   /* on screen: cross-fade 600 ms */
+              nv.className = 'xf'; box.appendChild(nv); old.id = 'recVideoOld'; nv.id = 'recVideo';
+              requestAnimationFrame(function () { requestAnimationFrame(function () { nv.classList.add('in'); }); });
+              setTimeout(function () { try { old.pause(); old.removeAttribute('src'); old.load(); old.remove(); } catch (e) {} nv.className = ''; }, 700);
+            } else { nv.id = 'recVideo'; box.replaceChild(nv, old); try { old.pause(); old.removeAttribute('src'); old.load(); } catch (e) {} }
             nv.playbackRate = info.rate; nv.defaultPlaybackRate = info.rate;
             info.url = info.urls[k]; info.fmt = /\.webm(\?|$)/.test(info.urls[k]) ? 'webm' : 'mp4';
             res(info);
@@ -952,6 +956,12 @@
     else if (body.classList.contains('rec-on')) { recShow(false); if (RECV.ready) RECV.state = 'ready'; try { $('#recVideo').pause(); } catch (e) {} }
   }
   function recPlay() { if (!cfg.KEY) return; RECV.userHidden = false; recShowWhenReady(); }
+  /* the remote picked another recording: on s11 -> build that one once and cross-fade; elsewhere -> the next s10b / s11 builds it */
+  function recSelected() {
+    if (!cfg.KEY) return;
+    if (ids[state.i] === 's11') { recStart().then(function () { if (ids[state.i] === 's11' && !RECV.userHidden) { recShow(true); RECV.state = 'playing'; publishState(); } }, function () {}); }
+    else { RB.p = null; RB.failed = false; }
+  }
   function recHide() { RECV.userHidden = true; recShow(false); RECV.state = RECV.ready ? 'ready' : 'idle'; publishState(); }
 
   /* ---------------- keyboard ---------------- */
@@ -1115,7 +1125,7 @@
         /* relay: apply within ~100 ms (no long easing); ntfy: ease over the (slow) sample interval */
         setSun(val, via === 'p2p' ? 40 : via === 'relay' ? 100 : (ms != null ? ms : Math.round(1000 / window.GrinoTransport.sunHz(via) * 1.05)));
         break;
-      case 'rec': if (v === 'off') recHide(); else recPlay(); break;
+      case 'rec': if (v === 'off') recHide(); else if (v === 'select') recSelected(); else recPlay(); break;
       case 'sweep': setSun(v && v.to != null ? v.to : 1, v && v.ms ? v.ms : 7000); break;
       case 'guard': setGuard(typeof v === 'boolean' ? v : !state.guard); break;
       case 'addbox': addBox(); break;

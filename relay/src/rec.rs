@@ -26,7 +26,7 @@ use tokio::process::Command;
 use tokio::sync::Semaphore;
 
 const MAX_SEGMENT: usize = 64 * 1024 * 1024;
-const SPEED: u32 = 10;
+const SPEED: u32 = 5;
 
 struct Cfg {
     dir: PathBuf,
@@ -52,6 +52,7 @@ struct KeyQ {
     k: Option<String>,
     ext: Option<String>,
     full: Option<String>,
+    session: Option<String>,
 }
 
 fn ok_key(q: &KeyQ) -> bool {
@@ -100,12 +101,12 @@ async fn upload(UrlPath((session, seq)): UrlPath<(String, u32)>, Query(q): Query
     Json(serde_json::json!({"ok": true, "seq": seq, "bytes": body.len()})).into_response()
 }
 
-/// Sped-up copies of one segment: every SPEED-th moment, 30 fps, <= 1280 px wide, no audio —
+/// Sped-up copies of one segment: SPEED× faster, 30 fps, <= 960 px wide (half Full HD), no audio —
 /// H.264 Constrained Baseline in MP4 (hardware decoders everywhere) and VP8 in WebM (decoded by the
 /// browser itself, e.g. on Windows "N" editions without system H.264).
 async fn make_fast(raw: PathBuf, fast: PathBuf) {
     let _permit = JOBS.acquire().await;
-    let vf = format!("setpts=PTS/{SPEED},fps=30,scale='min(1280,iw)':-2,format=yuv420p");
+    let vf = format!("setpts=PTS/{SPEED},fps=30,scale='min(960,iw)':-2,format=yuv420p");
     let tmp = fast.with_extension("tmp.mp4");
     let ok = Command::new("nice")
         .args(["-n", "15", "ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i"])
@@ -126,7 +127,7 @@ async fn make_fast(raw: PathBuf, fast: PathBuf) {
     let okw = Command::new("nice")
         .args(["-n", "15", "ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i"])
         .arg(&raw)
-        .args(["-an", "-vf", &vf, "-c:v", "libvpx", "-deadline", "realtime", "-cpu-used", "8", "-b:v", "2500k", "-auto-alt-ref", "0"])
+        .args(["-an", "-vf", &vf, "-c:v", "libvpx", "-deadline", "realtime", "-cpu-used", "8", "-b:v", "1500k", "-auto-alt-ref", "0"])
         .arg(&tmpw)
         .status()
         .await
@@ -148,6 +149,7 @@ struct Listing {
     fast_full: Option<String>,
     fast_webm: Option<String>,
     updated: u64,
+    selected: bool,
 }
 
 async fn listing(session: &str) -> Option<Listing> {
@@ -214,6 +216,108 @@ async fn latest(Query(q): Query<KeyQ>) -> Response {
         Some(l) => Json(l).into_response(),
         None => (StatusCode::NOT_FOUND, "no sessions\n").into_response(),
     }
+}
+
+fn selected_file() -> Option<PathBuf> {
+    cfg().map(|c| c.dir.join("selected.txt"))
+}
+
+async fn selected_session() -> Option<String> {
+    let f = selected_file()?;
+    let s = tokio::fs::read_to_string(f).await.ok()?;
+    let s = s.trim().to_string();
+    (valid_session(&s) && session_dir(&s).is_dir()).then_some(s)
+}
+
+/// Middle frame of an attempt (cached as thumb.jpg in the session folder).
+async fn ensure_thumb(session: &str) -> Option<String> {
+    let dir = session_dir(session);
+    let thumb = dir.join("thumb.jpg");
+    if !thumb.exists() {
+        let segs = files(&dir, "seg_").await;
+        let mid = segs.get(segs.len() / 2)?;
+        let tmp = dir.join(".thumb.tmp.jpg");
+        let ok = Command::new("ffmpeg")
+            .args(["-nostdin", "-y", "-loglevel", "error", "-ss", "1.5", "-i"])
+            .arg(mid)
+            .args(["-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "4"])
+            .arg(&tmp)
+            .status()
+            .await
+            .map(|s| s.success())
+            .unwrap_or(false);
+        if !ok || tokio::fs::rename(&tmp, &thumb).await.is_err() {
+            return None;
+        }
+    }
+    Some(format!("/grino/rec/files/{session}/thumb.jpg"))
+}
+
+/// All attempts (one per Record → Stop), newest first, with a middle-frame thumbnail.
+async fn sessions(Query(q): Query<KeyQ>) -> Response {
+    if !ok_key(&q) {
+        return deny();
+    }
+    let Some(c) = cfg() else { return deny() };
+    let selected = selected_session().await;
+    let mut out = Vec::new();
+    if let Ok(mut rd) = tokio::fs::read_dir(&c.dir).await {
+        while let Ok(Some(e)) = rd.next_entry().await {
+            let name = e.file_name().to_string_lossy().to_string();
+            if !valid_session(&name) || !e.path().is_dir() {
+                continue;
+            }
+            if let Some(l) = listing(&name).await {
+                let segs = l.segments.len();
+                if segs == 0 {
+                    continue;
+                }
+                let thumb = ensure_thumb(&name).await;
+                out.push(serde_json::json!({
+                    "session": name, "segments": segs, "seconds": segs * 4, "updated": l.updated,
+                    "thumb": thumb, "selected": selected.as_deref() == Some(name.as_str())
+                }));
+            }
+        }
+    }
+    out.sort_by(|a, b| b["updated"].as_u64().cmp(&a["updated"].as_u64()));
+    Json(serde_json::json!({"selected": selected, "sessions": out})).into_response()
+}
+
+/// Choose which attempt the deck shows (session=latest clears the choice).
+async fn select(Query(q): Query<KeyQ>) -> Response {
+    if !ok_key(&q) {
+        return deny();
+    }
+    let Some(f) = selected_file() else { return deny() };
+    let s = q.session.clone().unwrap_or_default();
+    if s.is_empty() || s == "latest" {
+        let _ = tokio::fs::remove_file(&f).await;
+        return Json(serde_json::json!({"ok": true, "selected": null})).into_response();
+    }
+    if !valid_session(&s) || !session_dir(&s).is_dir() {
+        return (StatusCode::NOT_FOUND, "no such session
+").into_response();
+    }
+    if tokio::fs::write(&f, &s).await.is_err() {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "write
+").into_response();
+    }
+    Json(serde_json::json!({"ok": true, "selected": s})).into_response()
+}
+
+/// The attempt the deck should show: the chosen one, otherwise the latest.
+async fn current(q: Query<KeyQ>) -> Response {
+    if !ok_key(&q.0) {
+        return deny();
+    }
+    if let Some(s) = selected_session().await {
+        if let Some(mut l) = listing(&s).await {
+            l.selected = true;
+            return Json(l).into_response();
+        }
+    }
+    latest(q).await
 }
 
 async fn concat(dir: &Path, inputs: &[PathBuf], out: &str) -> bool {
@@ -381,6 +485,9 @@ pub fn routes<S: Clone + Send + Sync + 'static>() -> Router<S> {
     }
     Router::new()
         .route("/grino/rec/latest", get(latest))
+        .route("/grino/rec/current", get(current))
+        .route("/grino/rec/sessions", get(sessions))
+        .route("/grino/rec/select", post(select))
         .route("/grino/rec/{session}/list", get(list))
         .route("/grino/rec/{session}/build", post(build))
         .route("/grino/rec/{session}/publish", post(publish))

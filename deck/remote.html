@@ -101,6 +101,13 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
 .list button b{font-size:17px}
 .list button.cur{background:var(--sun);color:#1A1205;border:0}
 .list button.deck{box-shadow:inset 0 0 0 3px var(--ok2)}
+.recs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rcard{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:14px;background:var(--card2);border:2px solid var(--line);text-align:left;color:var(--ink)}
+.rcard img,.rcard .ph{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:9px;background:#000;display:block}
+.rcard .ph{display:grid;place-items:center;font-weight:800;color:var(--sun);font-size:18px}
+.rcard b{font-size:16px}.rcard span{font-size:12px;color:var(--mut)}
+.rcard.sel{border-color:var(--sun);box-shadow:0 0 0 3px rgba(255,181,71,.25)}
+#recBtn.on,#recOff.on{background:linear-gradient(135deg,#FFD27A,#FFB547);color:#1A1205;border:0}
 .foot{font-size:12px;color:var(--mut);line-height:1.5;padding:4px 2px;word-break:break-all;-webkit-user-select:text;user-select:text}
 .foot b{color:var(--ink)}
 @media (min-width:700px){.wrap{max-width:640px}.nav button{height:110px}}
@@ -163,10 +170,14 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
       <div class="row"><button class="big sec" id="viewReset">Reset view</button><button class="big sec" id="viewAuto" hidden>Auto-rotate</button></div>
     </div>
     <div class="panel" id="pRec">
-      <h2>Recording <i id="recV">—</i></h2>
-      <div class="row" style="margin-top:0"><button class="big sec hot" id="recBtn">▶ Recording</button><button class="big sec" id="recOff">Hide</button></div>
+      <h2>Video on the deck <i id="recV">—</i></h2>
+      <div class="row" style="margin-top:0"><button class="big sec" id="recBtn">Show video</button><button class="big sec" id="recOff">Hide video</button></div>
       <div class="row"><button class="big sec" id="recPub">Publish full video to the site</button></div>
       <div id="recPubV" style="margin-top:8px;font-size:14px;font-weight:700;color:var(--mut)"></div>
+    </div>
+    <div class="panel" id="pRecs">
+      <h2>Recordings <i id="recsV">—</i></h2>
+      <div class="recs" id="recsList"></div>
     </div>
     <div class="panel" id="pCalc">
       <h2>Calculator <i id="calcV">—</i></h2>
@@ -186,6 +197,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
     <button class="chipb" id="wake">Awake</button>
     <button class="chipb" id="auto">Auto</button>
     <button class="chipb danger" id="resetAll">Reset all</button>
+    <button class="chipb" id="recsMenu">Recordings</button>
   </div>
 
   <div class="tmr">

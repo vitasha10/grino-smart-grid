@@ -27,7 +27,10 @@ body{display:flex;flex-direction:column;padding:max(8px,env(safe-area-inset-top)
 .stats{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .st{border-radius:14px;background:var(--card);border:1px solid var(--line);padding:6px 4px;text-align:center}
 .st b{display:block;font-size:22px;font-weight:800}.st span{font-size:11px;color:var(--mut)}
-#newRec{min-height:52px;border-radius:16px;border:1.5px solid rgba(255,255,255,.35);background:transparent;color:var(--ink);font:800 17px var(--font)}
+.slide2stop{position:relative;height:72px;border-radius:36px;background:#2a1513;border:2px solid rgba(239,75,79,.6);touch-action:none;overflow:hidden}
+.s2s-lab{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:18px;color:#FFB3B3;letter-spacing:.04em;pointer-events:none}
+.s2s-knob{position:absolute;left:4px;top:4px;width:64px;height:60px;border-radius:30px;background:#fff;color:#0B1511;display:grid;place-items:center;font-size:22px;font-weight:900;touch-action:none}
+.s2s-knob.back{transition:transform .35s cubic-bezier(.2,.9,.3,1.3)}
 #sess{font-size:14px;font-weight:700;color:var(--ink)}#sess b{color:var(--sun)}
 #msg{font-size:13px;color:var(--mut);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #msg.bad{color:#FFB3B3}#msg.ok{color:#7FEFB0}
@@ -51,7 +54,7 @@ body{display:flex;flex-direction:column;padding:max(8px,env(safe-area-inset-top)
       <div class="st"><b id="nQ">0</b><span>queued</span></div>
     </div>
   </div>
-  <button id="newRec">＋ New recording</button>
+  <div class="slide2stop" id="s2s" hidden><div class="s2s-lab">slide to stop ›››</div><div class="s2s-knob" id="s2sKnob">■</div></div>
   <div id="sess">session: —</div>
   <div id="msg"></div>
 </div>

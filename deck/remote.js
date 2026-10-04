@@ -291,6 +291,40 @@
   $('guard').onclick = function () { R.lines = R.lines ? 0 : 1; R.guard = R.lines > 0; send('lines', R.lines, { discrete: true }); buzz(); };
   $('addBox').onclick = function () { R.lines = 2; R.guard = true; send('lines', 2, { discrete: true }); buzz(); };
   $('recBtn').onclick = function () { send('rec', 'on', { discrete: true }); buzz(); };
+  /* ---------- recordings picker: GET /rec/sessions, tap -> POST /rec/select (session=latest clears); no delete anywhere ---------- */
+  var RECS = { open: false, data: null, busy: false };
+  var recApiR = function (path) { return (cfg.RELAY_URL || '').replace(/\/+$/, '') + '/rec/' + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'k=' + encodeURIComponent(cfg.KEY || ''); };
+  var recAbsR = function (u) { try { return new URL(u, (cfg.RELAY_URL || '').replace(/\/+$/, '') + '/').href; } catch (e) { return u; } };
+  function mmssS(s) { s = Math.max(0, Math.round(+s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function hhmm(t) { try { var d = new Date((+t < 1e12 ? +t * 1000 : +t)); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); } catch (e) { return ''; } }
+  function loadRecs() {
+    if (!cfg.KEY) return;
+    fetch(recApiR('sessions'), { cache: 'no-store' }).then(function (x) { return x.ok ? x.json() : null; }).then(function (j) { if (j) { RECS.data = j; drawRecs(); } }).catch(function () {});
+  }
+  function drawRecs() {
+    var el = $('recsList'), j = RECS.data || { sessions: [] }, sel = j.selected || null;
+    el.innerHTML = '';
+    var latest = document.createElement('button'); latest.className = 'rcard' + (!sel ? ' sel' : '');
+    latest.innerHTML = '<div class="ph">Latest</div><b>Latest</b><span>always the newest attempt</span>';
+    latest.onclick = function () { pick('latest'); }; el.appendChild(latest);
+    (j.sessions || []).forEach(function (s, i) {
+      var b = document.createElement('button'); b.className = 'rcard' + (sel && s.session === sel ? ' sel' : '');
+      var im = s.thumb ? '<img alt="" src="' + recAbsR(s.thumb) + '">' : '<div class="ph">—</div>';
+      b.innerHTML = im + '<b>' + mmssS(s.seconds) + ' · ' + hhmm(s.updated) + '</b><span>attempt ' + ((j.sessions.length - i)) + ' · ' + (s.segments || 0) + ' parts</span>';
+      b.onclick = function () { pick(s.session); }; el.appendChild(b);
+    });
+    $('recsV').textContent = sel ? 'chosen: ' + hhmm(((j.sessions || []).filter(function (s) { return s.session === sel; })[0] || {}).updated) : 'latest';
+  }
+  function pick(session) {
+    if (RECS.busy) return; RECS.busy = true; buzz();
+    fetch(recApiR('select?session=' + encodeURIComponent(session)), { method: 'POST', cache: 'no-store' })
+      .then(function (x) { if (!x.ok) throw new Error('HTTP ' + x.status); return x.json().catch(function () { return {}; }); })
+      .then(function () { send('rec', 'select', { discrete: true }); loadRecs(); })
+      .catch(function (e) { $('recsV').textContent = 'not changed: ' + (e && e.message || e); })
+      .then(function () { RECS.busy = false; });
+  }
+  $('recsMenu').onclick = function () { RECS.open = !RECS.open; if (RECS.open) { loadRecs(); setTimeout(function () { $('pRecs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); } render(); };
+  setInterval(function () { if ($('pRecs').classList.contains('on')) loadRecs(); }, 10000);
   $('recOff').onclick = function () { send('rec', 'off', { discrete: true }); buzz(); };
   /* publish: the server stitches the full-length video of the latest session -> /grino/rec/files/public/pitch.mp4 + poster.jpg */
   $('recPub').onclick = function () {
@@ -406,7 +440,10 @@
     $('pGuard').style.order = sc.guard ? '-1' : '';          /* S5: SunGuard buttons right under Next, the sun strip below them */
     $('pCalc').classList.toggle('on', !!sc.calc);
     $('pRec').classList.toggle('on', sc.id === 's11');
-    var rs = d && d.caps && d.caps.rec; $('recV').textContent = rs === 'building' ? 'building on the server…' : rs === 'playing' ? 'playing on the deck' : rs === 'ready' ? 'ready (hidden)' : rs === 'none' ? 'no recording yet' : 'shows by itself on this slide';
+    var recsOn = !!cfg.KEY && (sc.id === 's11' || RECS.open); if (recsOn && !$('pRecs').classList.contains('on') && !RECS.data) loadRecs();
+    $('pRecs').classList.toggle('on', recsOn); $('recsMenu').classList.toggle('on', RECS.open);
+    var rs = d && d.caps && d.caps.rec; $('recV').textContent = rs === 'building' ? 'preparing…' : rs === 'playing' ? 'shown' : rs === 'ready' ? 'hidden' : rs === 'none' ? 'no recording yet' : 'shows by itself on this slide';
+    $('recBtn').classList.toggle('on', rs === 'playing'); $('recOff').classList.toggle('on', rs !== 'playing' && rs !== 'building');
     $('sunStrip').classList.toggle('off', R.rl);
     $('pvSlider').classList.toggle('off', R.rl);
     paintStrip(R.sun, d && typeof d.sun === 'number' ? d.sun : null);

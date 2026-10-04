@@ -139,7 +139,7 @@
     r.ondataavailable = function (e) { if (e.data && e.data.size) run.chunks.push(e.data); };
     r.onstop = function () { pendingStops--; finish(run); };
     r.onerror = function () { msg('Recorder error — continuing with the next segment', 'bad'); };
-    r.start(); pendingStops++; saveSess();
+    r.start(); pendingStops++;
     return run;
   }
   function finish(run) {
@@ -167,29 +167,25 @@
   function wakeLock() { try { if ('wakeLock' in navigator && !wake) navigator.wakeLock.request('screen').then(function (w) { wake = w; w.addEventListener('release', function () { wake = null; }); }).catch(function () {}); } catch (e) {} }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && REC.on) wakeLock(); });
 
-  /* the current session survives Record / Stop / a reload; only "New recording" starts a new one (the deck shows the newest) */
-  var SK = 'grino27_rec_session';
-  function loadSess() { try { var s = JSON.parse(localStorage.getItem(SK) || 'null'); if (s && /^[a-f0-9]{16}$/.test(s.session)) return s; } catch (e) {} return null; }
-  function saveSess() { try { localStorage.setItem(SK, JSON.stringify({ session: REC.session, next: REC.seq })); } catch (e) {} }
-  var saved = loadSess(); if (saved) { REC.session = saved.session; REC.seq = saved.next || 0; }
+  /* one attempt = Record -> Stop: every Record starts a NEW session; nothing resumes after a reload */
   function start(fresh) {
     if (!vTrack) return;
     REC.mime = pickMime();
     if (REC.mime === null) { msg('This browser cannot record video (no MediaRecorder)', 'bad'); return; }
-    if (fresh || !REC.session) { REC.session = hex(8); REC.seq = 0; REC.recorded = 0; REC.uploaded = 0; REC.server = 0; }
-    REC.on = true; saveSess(); render();
+    REC.session = hex(8); REC.seq = 0; REC.recorded = 0; REC.uploaded = 0; REC.server = 0;
+    REC.on = true; render();
     output = buildOutput();
     try { cur = newRecorder(); } catch (e) { REC.on = false; msg('Recorder did not start: ' + (e && e.message || e), 'bad'); return; }
     rotT = setInterval(rotate, SEGMENT_MS);
     wakeLock();
-    $('go').textContent = '■ Stop'; $('go').classList.add('stop'); $('go').disabled = false;
+    $('go').hidden = true; $('s2s').hidden = false;
     $('badge').textContent = 'REC · ' + (REC.mime || 'auto') .replace(/;.*/, '') + ' · ' + REC.mode; $('badge').classList.add('rec');
     msg('Recording · session ' + REC.session.slice(0, 6) + '…', 'ok');
   }
   function stop() {
     REC.on = false; clearInterval(rotT);
     var last = cur; cur = null;
-    $('go').disabled = true; $('go').textContent = 'Finishing…'; $('badge').classList.remove('rec');
+    $('s2s').hidden = true; $('go').hidden = false; $('go').disabled = true; $('go').textContent = 'Finishing…'; $('badge').classList.remove('rec');
     try { if (last && last.r.state !== 'inactive') last.r.stop(); } catch (e) {}
     var session = REC.session, t0 = Date.now();
     /* wait for the last segment, then for the queue of this session to drain, then build */
@@ -200,18 +196,26 @@
         msg('Building the replay on the server…');
         fetch(API + '/' + encodeURIComponent(session) + '/build?k=' + encodeURIComponent(KEY), { method: 'POST', cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
-          .then(function (j) { REC.built = j; msg('Uploaded: ' + REC.recorded + ' segments · ' + (j && typeof j.fast === 'string' && j.fast ? 'replay ×10 ready' : 'the deck builds the replay on s10b'), 'ok'); })
+          .then(function (j) { REC.built = j; msg('Uploaded: ' + REC.recorded + ' segments · ' + (j && typeof j.fast === 'string' && j.fast ? 'replay ×5 ready' : 'the deck builds the replay on s10b'), 'ok'); })
           .catch(function (e) { msg('Build failed (' + (e && e.message || e) + ') — the deck can build it again', 'bad'); })
           .then(function () { if (canvas) { clearInterval(drawT); canvas = null; } if (srcVideo) { srcVideo.remove(); srcVideo = null; } $('go').disabled = false; $('go').textContent = '● Record'; $('go').classList.remove('stop'); render(); });
       });
     })();
   }
-  $('go').onclick = function () { if (REC.on) stop(); else start(false); };
-  $('newRec').onclick = function () {
-    if (!window.confirm('Start a NEW recording?\n\nThe deck will show the new one (the previous recording stays on the server).')) return;
-    if (REC.on) { REC.on = false; clearInterval(rotT); var last = cur; cur = null; try { if (last && last.r.state !== 'inactive') last.r.stop(); } catch (e) {} }
-    start(true); msg('New recording · session ' + REC.session.slice(0, 6) + '…', 'ok');
-  };
+  $('go').onclick = function () { if (!REC.on) start(); };   /* Stop only by sliding */
+  /* slide to stop: drag the knob across >= 85 % of the track; a tap or a long press does nothing; released early -> springs back */
+  (function () {
+    var tr = $('s2s'), kn = $('s2sKnob'), drag = null;
+    function maxX() { return Math.max(1, tr.clientWidth - kn.offsetWidth - 8); }
+    kn.addEventListener('pointerdown', function (e) { if (!REC.on) return; drag = { x0: e.clientX, x: 0 }; kn.classList.remove('back'); try { kn.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); });
+    kn.addEventListener('pointermove', function (e) { if (!drag) return; drag.x = Math.max(0, Math.min(maxX(), e.clientX - drag.x0)); kn.style.transform = 'translateX(' + drag.x + 'px)'; });
+    function end() {
+      if (!drag) return; var done = drag.x >= 0.85 * maxX(); drag = null;
+      kn.classList.add('back'); kn.style.transform = 'translateX(0)';
+      if (done && REC.on) stop();
+    }
+    kn.addEventListener('pointerup', end); kn.addEventListener('pointercancel', end); kn.addEventListener('lostpointercapture', end);
+  })();
   /* segments the server has for the current session */
   setInterval(function () {
     if (!REC.session || !(REC.uploaded > 0 || REC.server > 0)) return;   /* nothing uploaded yet -> the server has no list (404) */
@@ -221,7 +225,7 @@
 
   function render() {
     $('nRec').textContent = REC.recorded; $('nUp').textContent = REC.uploaded; $('nQ').textContent = queued;
-    $('sess').innerHTML = REC.session ? 'session <b>' + REC.session.slice(0, 6) + '…</b> · on the server: <b>' + (REC.server != null ? REC.server : '…') + '</b> segments' + (REC.on ? ' · recording' : '') : 'session: — (Record starts one)';
+    $('sess').innerHTML = REC.session ? 'attempt <b>' + REC.session.slice(0, 6) + '…</b> · on the server: <b>' + (REC.server != null ? REC.server : '…') + '</b> segments' + (REC.on ? ' · recording' : '') : 'session: — (Record starts one)';
   }
   setInterval(render, 500);
 
