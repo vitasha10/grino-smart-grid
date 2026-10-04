@@ -609,7 +609,6 @@ body.rsnap .s5-net,body.rsnap .slide.active .s5-net{left:110px;transform:none}
 body.r3d.night .scene .kicker{color:#FFE2A8}
 body.r3d.night .scene .hl{color:#F4F1E8;text-shadow:0 2px 18px rgba(0,0,0,.5)}
 body.r3d.night .scene-hl{background:radial-gradient(closest-side,rgba(10,16,30,.55),rgba(10,16,30,0))}
-body.r3d.night .scene .src{color:rgba(244,241,232,.75)}
 
 /* ======================= v6 ======================= */
 /* organisers partner plate on every slide: same size/position as the cover; light strip on dark and 3D slides */
@@ -813,7 +812,7 @@ body.dcycle .s5-dcap{opacity:1;transform:translate(-50%,0)}
 .nb{white-space:nowrap;font-style:normal}
 .s5-points li{font-size:25px;line-height:1.22}.s5-points li b{font-size:30px}
 .eco-l{left:110px;width:700px}.eco-r2{left:850px;width:960px}.eco-r2 .eco-r b{font-size:34px}.eco-r2 .eco-r span{font-size:26px}.eco-later{top:872px;font-size:30px}
-.slide.scene .src{z-index:6;background:rgba(246,243,236,.86);color:#2c3a33;text-shadow:none;padding:4px 14px;border-radius:10px;left:0;right:0;margin:0 auto;width:max-content;max-width:1700px}
+body .slide.scene .src{z-index:6;background:rgba(246,243,236,.86);color:#2c3a33;text-shadow:none;padding:4px 14px;border-radius:10px;left:0;right:0;margin:0 auto;width:max-content;max-width:1700px}
 .s5-dcap{top:876px}
 
 /* v12: "Filmed on stage" on S11 — a FIXED slot bottom-left (empty while hidden); the QR card never moves or shrinks */
@@ -832,3 +831,5 @@ body.rec-on .s11-rec{visibility:visible;opacity:1;transform:none;transition:opac
 /* names move right of the slot (always — so nothing shifts when the video appears) */
 .s11-team{left:712px;top:556px;width:440px}
 .s11-team .names{flex-direction:column;align-items:flex-start;gap:10px}
+/* scene source line: always on its light plate, so always dark text (day, night, 3D, PNG, 2D) */
+body .slide.scene .src,body.night .slide.scene .src,body.r3d.night .slide.scene .src,body.rsnap .slide.scene .src{color:#2c3a33;text-shadow:none}

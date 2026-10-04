@@ -346,6 +346,7 @@ export function createStreet3D(opts = {}) {
   const S = { sun: 0.15, vel: 0, goal: 0.15, to: 0.15, sweep: null, stage: 0, act: new Array(N).fill(0), pop: new Array(N).fill(-9), showAll: false,
     actA: HOMES.map(() => ({ from: 0, to: 0, t0: 0, dur: 0 })), tap: false, tapK: 0, tapVolts: TAP_STEP_V, tapA: { from: 0, to: 0, t0: 0, dur: 0 }, inv: new Array(N).fill(1), trip: new Array(N).fill(-1), over: new Array(N).fill(-1), pulseT: -9,
     active: false, raf: 0, lastT: 0, time: 0, flowPhase: 0, lastShadowSun: -1, built: false, failed: false, ready: false,
+    lost: false, lostAt: 0, lostTimer: 0, errs: 0,
     quality: 0, cw: 1920, ch: 1080, lastSec: -1, dtLast: 0, hl: false, auto: opts.autoRotate !== false, userAt: -99, tween: null, swayBase: null, swayT0: 0 };
   const W = {}, U = { off: { value: new Array(N).fill(0) }, glint: { value: 0 }, time: { value: 0 }, sweep: { value: new THREE.Vector4(-99, -99, -99, -99) }, sweepDur: { value: 0.6 } };
   let root = null, wrap = null, ui = null, renderer = null, scene = null, camera = null, controls = null;
@@ -370,7 +371,8 @@ export function createStreet3D(opts = {}) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = false;
-    renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fail('webgl context lost'); });
+    renderer.domElement.addEventListener('webglcontextlost', onContextLost);
+    renderer.domElement.addEventListener('webglcontextrestored', onContextRestored);
     renderer.domElement.style.pointerEvents = 'none';
     wrap.appendChild(renderer.domElement);
     if (opts.scrim) div('s3d-scrim' + (opts.scrim === 'dark' ? '' : ' light'), wrap);
@@ -938,21 +940,55 @@ export function createStreet3D(opts = {}) {
     camera.fov = 2 * Math.atan(Math.tan(LENS.fov * Math.PI / 360) * fullH / ch) * 180 / Math.PI;
     camera.aspect = cw / fullH; camera.setViewOffset(cw, fullH, 0, 0, cw, ch); camera.updateProjectionMatrix();
   }
-  const WD = { t0: 0, frames: 0, warm: 0, on: opts.watchdog !== false };
+  const WD = { t0: 0, frames: 0, warm: 0, prev: 0, gaps: 0, bad: 0, proven: false, on: opts.watchdog !== false };
   function setQuality(q) {
     S.quality = q; lastKey = ''; resize();
     if (q >= 2 && renderer.shadowMap.enabled) { renderer.shadowMap.enabled = false; scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((mm) => { mm.needsUpdate = true; }); }); }
   }
-  /* 1.5 s window at full quality (< 12 fps -> 2D now, < 30 -> low quality), then 3 s windows (< 25 fps -> 2D) */
+  /* new measuring window after a pause; the first frames after a pause are often slow (compositor, GPU wake-up) */
+  function wdPause(settleMs) { WD.t0 = 0; WD.prev = 0; WD.gaps = 0; WD.bad = 0; WD.warm = performance.now() + settleMs; S.lastT = 0; }
+  /* fps windows: 1.5 s at full quality, 3 s at low quality. A pause is not slowness: a frame gap > 250 ms (window hidden,
+     Alt-Tab, frozen tab, long task) drops the window, unless 4 slow frames come in a row (a really slow GPU).
+     Two bad windows in a row are needed: full quality < 24 fps -> low quality, < 12 fps -> 2D; low quality < 20 fps -> 2D.
+     24, not 30: Chrome's energy saver and Windows battery saver cap pages at 30 fps, which is not a slow GPU.
+     Once a full-quality window reached 24 fps the GPU is proven and the 3D never switches to 2D. */
   function watchdog(t) {
+    const gap = WD.prev ? t - WD.prev : 0; WD.prev = t;
     if (document.visibilityState !== 'visible' || t < WD.warm) { WD.t0 = 0; return; }
+    if (gap > 250) { if (++WD.gaps < 4) { WD.t0 = 0; return; } } else WD.gaps = 0;
     if (!WD.t0) { WD.t0 = t; WD.frames = 0; return; }
     WD.frames++;
     const span = t - WD.t0; if (span < (S.quality === 0 ? 1500 : 3000)) return;
     const fps = WD.frames * 1000 / span; S.fps = fps; WD.t0 = t; WD.frames = 0;
+    if (S.quality === 0 && fps >= 24) WD.proven = true;
     if (!WD.on) return;
-    if (S.quality === 0) { if (fps < 12) fail('fps ' + fps.toFixed(1) + ' at full quality'); else if (fps < 30) { setQuality(2); WD.warm = t + 700; } }
-    else if (fps < 25) fail('fps ' + fps.toFixed(1) + ' < 25 for 3 s at low quality');
+    WD.bad = (S.quality === 0 ? fps < 24 : fps < 20) ? WD.bad + 1 : 0;
+    if (WD.bad < 2) return;
+    WD.bad = 0;
+    if (S.quality === 0 && (fps >= 12 || WD.proven)) { setQuality(2); WD.warm = t + 700; }
+    else if (!WD.proven) fail('fps ' + fps.toFixed(1) + (S.quality === 0 ? ' at full quality' : ' at low quality') + ', two windows in a row');
+  }
+  function onVisibility() {
+    wdPause(1000);
+    if (document.visibilityState === 'visible') { if (S.lost) S.lostAt = performance.now(); kick(); }
+  }
+  /* WebGL context loss (GPU reset, driver update, sleep): three.js restores everything itself on 'webglcontextrestored';
+     only if no restore comes within 5 s of VISIBLE time the deck falls back */
+  function onContextLost(e) {
+    e.preventDefault(); S.lost = true; S.lostAt = performance.now();
+    if (S.raf) { cancelAnimationFrame(S.raf); S.raf = 0; }
+    clearTimeout(S.lostTimer);
+    const check = () => {
+      if (!S.lost || S.failed) return;
+      if (document.visibilityState === 'visible' && performance.now() - S.lostAt > 5000) { fail('webgl context lost, not restored in 5 s'); return; }
+      S.lostTimer = setTimeout(check, 500);
+    };
+    S.lostTimer = setTimeout(check, 500);
+  }
+  function onContextRestored() {
+    S.lost = false; clearTimeout(S.lostTimer);
+    S.lastShadowSun = -1; lastKey = ''; resize(); wdPause(1500);
+    if (S.active) kick(); else renderOnce();
   }
 
   /* ---------------- loop ---------------- */
@@ -998,18 +1034,21 @@ export function createStreet3D(opts = {}) {
   function draw(t) { camera.updateMatrixWorld(); applySun(S.sun); applyModel(t, S.dtLast); renderer.render(scene, camera); applyOverlay(); }
   function frame(t) {
     S.raf = 0;
-    if (!S.active || S.failed) return;
+    if (!S.active || S.failed || S.lost) return;
     try {
       const dt = S.lastT ? Math.min(0.1, (t - S.lastT) / 1000) : 0.016; S.lastT = t; S.dtLast = dt;
       step(t, dt);
       if ((S.time | 0) !== S.lastSec) { S.lastSec = S.time | 0; resize(); }
-      draw(t); watchdog(t);
-    } catch (e) { fail('frame error: ' + (e && e.message)); return; }
+      draw(t); watchdog(t); S.errs = 0;
+    } catch (e) {                                           /* one bad frame is skipped; only a persistent error (30 frames in a row) ends the 3D */
+      if (!S.errs) console.warn('[street3d] frame error:', e);
+      if (++S.errs >= 30) { fail('frame error: ' + (e && e.message)); return; }
+    }
     S.raf = requestAnimationFrame(frame);
   }
-  function kick() { if (S.active && S.ready && !S.raf && !S.failed) { S.lastT = 0; S.raf = requestAnimationFrame(frame); } }
+  function kick() { if (S.active && S.ready && !S.raf && !S.failed && !S.lost) { S.lastT = 0; S.raf = requestAnimationFrame(frame); } }
   function renderOnce() {
-    if (!S.built || !S.ready || S.failed) return;
+    if (!S.built || !S.ready || S.failed || S.lost) return;
     try { S.sun = S.goal = S.to; S.vel = 0; S.sweep = null; retarget(true); S.tapK = S.tapA.to; S.tapA.dur = 0; controls.update(); S.dtLast = 0; draw(performance.now()); }
     catch (e) { fail('render error: ' + (e && e.message)); }
   }
@@ -1024,6 +1063,8 @@ export function createStreet3D(opts = {}) {
   function destroy() {
     try {
       window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('focus', onVisibility); window.removeEventListener('pageshow', onVisibility);
+      clearTimeout(S.lostTimer);
       if (controls) controls.dispose();
       if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
       if (scene) scene.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach((mm) => { if (mm.map) mm.map.dispose(); mm.dispose(); }); });
@@ -1068,6 +1109,7 @@ export function createStreet3D(opts = {}) {
     init(el) {
       if (S.built) { if (el && el !== root) { el.appendChild(wrap); root = el; resize(); } return; }
       build(el); window.addEventListener('resize', onResize);
+      document.addEventListener('visibilitychange', onVisibility); window.addEventListener('focus', onVisibility); window.addEventListener('pageshow', onVisibility);
     },
     async warm() {
       if (!S.built || S.failed) return;
@@ -1204,7 +1246,7 @@ export async function upgrade(el, opts = {}) {
     const screens = ((window.GRINO && window.GRINO.SCREENS) || []).filter((x) => x.sun).map((x) => x.id);
     const active = opts.active != null ? !!opts.active : (screens.length ? screens.includes(document.body.dataset.screen) : true);
     if (saved.setActive) saved.setActive(false);
-    const s = svg2d(); if (s) s.style.display = 'none';
+    const s = svg2d(); if (s) s.remove();                 /* nothing stays under the 3D; back2D() rebuilds the 2D street only if the 3D ever gives up */
     API_KEYS.forEach((k) => { host[k] = s3[k]; });
     host.is3D = true; host._s3d = s3;
     swapped = true; window.Street3DFailed = false;
