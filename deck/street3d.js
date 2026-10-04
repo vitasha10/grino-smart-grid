@@ -871,8 +871,10 @@ export function createStreet3D(opts = {}) {
     /* 1. line labels: content */
     for (const L of LINES) {
       const o = T.lines[L], wi = WORST[LINES.indexOf(L)], on = boxedLine(L), boxedNow = S.act[wi] > 0.5;
-      const v = Math.max(...HOMES.map((h, i) => (lineOf(i) === L ? m.v[i] : -1))), tr = HOMES.some((h, i) => lineOf(i) === L && S.trip[i] >= 0);
-      const lv = tr ? 2 : level(v, boxedNow);
+      /* status from the voltage itself: during an emergency shutdown at noon the line is still ~245 V (OVER); if the sun goes down
+         meanwhile it shows the real 236 V ✓, and only the "emergency shutdown · panels off" chip stays until the inverters restart */
+      const v = Math.max(...HOMES.map((h, i) => (lineOf(i) === L ? m.v[i] : -1)));
+      const lv = level(v, boxedNow);
       const title = L === 'C' ? 'Line C · short line' : ('Line ' + L + (s5 ? (on ? ' · with SunGuard' : ' · no SunGuard') : ''));
       const pre = S.sun < 0, chip = S.hl && on && s5, trip = HOMES.some((h, i) => lineOf(i) === L && S.trip[i] >= 0);
       const key = title + '|' + Math.round(v) + '|' + lv + '|' + (on && s5 ? 1 : 0) + '|' + pre + '|' + chip + '|' + trip + '|' + S.tap;
