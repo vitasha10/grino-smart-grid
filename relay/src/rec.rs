@@ -35,6 +35,8 @@ struct Cfg {
 
 static CFG: OnceLock<Option<Cfg>> = OnceLock::new();
 static JOBS: Semaphore = Semaphore::const_new(1);
+/// One build at a time (several decks may ask at once); a build that waited returns fresh files.
+static BUILD: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 fn cfg() -> Option<&'static Cfg> {
     CFG.get_or_init(|| {
@@ -49,6 +51,7 @@ fn cfg() -> Option<&'static Cfg> {
 struct KeyQ {
     k: Option<String>,
     ext: Option<String>,
+    full: Option<String>,
 }
 
 fn ok_key(q: &KeyQ) -> bool {
@@ -97,22 +100,42 @@ async fn upload(UrlPath((session, seq)): UrlPath<(String, u32)>, Query(q): Query
     Json(serde_json::json!({"ok": true, "seq": seq, "bytes": body.len()})).into_response()
 }
 
-/// Sped-up copy of one segment: every SPEED-th moment, 30 fps, <= 1280 px wide, no audio.
+/// Sped-up copies of one segment: every SPEED-th moment, 30 fps, <= 1280 px wide, no audio —
+/// H.264 Constrained Baseline in MP4 (hardware decoders everywhere) and VP8 in WebM (decoded by the
+/// browser itself, e.g. on Windows "N" editions without system H.264).
 async fn make_fast(raw: PathBuf, fast: PathBuf) {
     let _permit = JOBS.acquire().await;
-    let tmp = fast.with_extension("tmp.mp4");
     let vf = format!("setpts=PTS/{SPEED},fps=30,scale='min(1280,iw)':-2,format=yuv420p");
-    let status = Command::new("nice")
+    let tmp = fast.with_extension("tmp.mp4");
+    let ok = Command::new("nice")
         .args(["-n", "15", "ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i"])
         .arg(&raw)
-        .args(["-an", "-vf", &vf, "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26", "-movflags", "+faststart"])
+        .args(["-an", "-vf", &vf, "-c:v", "libx264", "-preset", "ultrafast", "-profile:v", "baseline", "-level", "3.1", "-crf", "26", "-movflags", "+faststart"])
         .arg(&tmp)
         .status()
-        .await;
-    if matches!(status, Ok(s) if s.success()) {
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if ok {
         let _ = tokio::fs::rename(&tmp, &fast).await;
     } else {
         let _ = tokio::fs::remove_file(&tmp).await;
+    }
+    let webm = fast.with_extension("webm");
+    let tmpw = fast.with_extension("tmp.webm");
+    let okw = Command::new("nice")
+        .args(["-n", "15", "ffmpeg", "-nostdin", "-y", "-loglevel", "error", "-i"])
+        .arg(&raw)
+        .args(["-an", "-vf", &vf, "-c:v", "libvpx", "-deadline", "realtime", "-cpu-used", "8", "-b:v", "2500k", "-auto-alt-ref", "0"])
+        .arg(&tmpw)
+        .status()
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if okw {
+        let _ = tokio::fs::rename(&tmpw, &webm).await;
+    } else {
+        let _ = tokio::fs::remove_file(&tmpw).await;
     }
 }
 
@@ -123,6 +146,7 @@ struct Listing {
     fast: Vec<String>,
     full: Option<String>,
     fast_full: Option<String>,
+    fast_webm: Option<String>,
     updated: u64,
 }
 
@@ -141,12 +165,14 @@ async fn listing(session: &str) -> Option<Listing> {
         let url = format!("/grino/rec/files/{session}/{name}");
         if name.starts_with("seg_") {
             l.segments.push(url);
-        } else if name.starts_with("fast_") {
+        } else if name.starts_with("fast_") && name.ends_with(".mp4") {
             l.fast.push(url);
         } else if name == "full.mp4" {
             l.full = Some(url);
         } else if name == "fast.mp4" {
             l.fast_full = Some(url);
+        } else if name == "fast.webm" {
+            l.fast_webm = Some(url);
         }
     }
     l.segments.sort();
@@ -175,7 +201,7 @@ async fn latest(Query(q): Query<KeyQ>) -> Response {
     let mut best: Option<Listing> = None;
     while let Ok(Some(e)) = rd.next_entry().await {
         let name = e.file_name().to_string_lossy().to_string();
-        if !valid_session(&name) {
+        if !valid_session(&name) || name == "public" {
             continue;
         }
         if let Some(l) = listing(&name).await {
@@ -221,31 +247,114 @@ async fn concat(dir: &Path, inputs: &[PathBuf], out: &str) -> bool {
     }
 }
 
+async fn concat_any(dir: &Path, inputs: &[PathBuf], out: &str) -> bool {
+    if inputs.is_empty() {
+        return false;
+    }
+    let list_path = dir.join(format!(".{out}.txt"));
+    let body: String = inputs
+        .iter()
+        .map(|p| format!("file '{}'
+", p.file_name().unwrap_or_default().to_string_lossy()))
+        .collect();
+    if tokio::fs::write(&list_path, body).await.is_err() {
+        return false;
+    }
+    let tmp = dir.join(format!(".{out}.tmp.webm"));
+    let ok = Command::new("ffmpeg")
+        .current_dir(dir)
+        .args(["-nostdin", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i"])
+        .arg(&list_path)
+        .args(["-c", "copy"])
+        .arg(&tmp)
+        .status()
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if ok {
+        tokio::fs::rename(&tmp, dir.join(out)).await.is_ok()
+    } else {
+        let _ = tokio::fs::remove_file(&tmp).await;
+        false
+    }
+}
+
 async fn build(UrlPath(session): UrlPath<String>, Query(q): Query<KeyQ>) -> Response {
     if !ok_key(&q) || !valid_session(&session) {
         return deny();
     }
     let dir = session_dir(&session);
-    // Let pending fast copies finish (one job at a time; wait up to 20 s).
-    let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
+    let _guard = BUILD.lock().await;
+    // In-progress recordings are fine: stitch what exists; give pending fast copies at most 3 s.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(3);
     loop {
         let raw = count(&dir, "seg_").await;
-        let fast = count(&dir, "fast_").await;
+        let fast = files(&dir, "fast_").await.iter().filter(|p| p.extension().map(|e| e == "mp4").unwrap_or(false)).count();
         if fast >= raw || tokio::time::Instant::now() >= deadline {
             break;
         }
         tokio::time::sleep(Duration::from_millis(300)).await;
     }
     let raws = files(&dir, "seg_").await;
-    let fasts = files(&dir, "fast_").await;
-    let full_ok = concat(&dir, &raws, "full.mp4").await;
+    let all_fast = files(&dir, "fast_").await;
+    let fasts: Vec<PathBuf> = all_fast.iter().filter(|p| p.extension().map(|e| e == "mp4").unwrap_or(false)).cloned().collect();
+    let webms: Vec<PathBuf> = all_fast.iter().filter(|p| p.extension().map(|e| e == "webm").unwrap_or(false)).cloned().collect();
+    // The deck needs only the fast copy; the full-length file is stitched on request (?full=1).
+    let full_ok = if q.full.as_deref() == Some("1") { concat(&dir, &raws, "full.mp4").await } else { false };
     let fast_ok = concat(&dir, &fasts, "fast.mp4").await;
+    let _webm_ok = concat_any(&dir, &webms, "fast.webm").await;
     let l = listing(&session).await.unwrap_or_default();
     Json(serde_json::json!({
-        "ok": full_ok || fast_ok, "full": l.full, "fast": l.fast_full,
+        "ok": full_ok || fast_ok, "full": l.full, "fast": l.fast_full, "fast_webm": l.fast_webm,
         "segments": raws.len(), "fast_segments": fasts.len(), "speed": SPEED
     }))
     .into_response()
+}
+
+/// After the pitch: stitch the full-length video of a session and publish it for the research
+/// site at /grino/rec/files/public/pitch.mp4 (+ poster.jpg). Replaces the previous one.
+async fn publish(UrlPath(session): UrlPath<String>, Query(q): Query<KeyQ>) -> Response {
+    if !ok_key(&q) || !valid_session(&session) {
+        return deny();
+    }
+    let Some(c) = cfg() else { return deny() };
+    let _guard = BUILD.lock().await;
+    let dir = session_dir(&session);
+    let raws = files(&dir, "seg_").await;
+    if raws.is_empty() || !concat(&dir, &raws, "full.mp4").await {
+        return (StatusCode::UNPROCESSABLE_ENTITY, "nothing to publish
+").into_response();
+    }
+    let public = c.dir.join("public");
+    if tokio::fs::create_dir_all(&public).await.is_err() {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "mkdir
+").into_response();
+    }
+    let tmp = public.join(".pitch.tmp.mp4");
+    if tokio::fs::copy(dir.join("full.mp4"), &tmp).await.is_err() || tokio::fs::rename(&tmp, public.join("pitch.mp4")).await.is_err() {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "copy
+").into_response();
+    }
+    let poster_tmp = public.join(".poster.tmp.jpg");
+    let ok = Command::new("ffmpeg")
+        .args(["-nostdin", "-y", "-loglevel", "error", "-ss", "3", "-i"])
+        .arg(public.join("pitch.mp4"))
+        .args(["-frames:v", "1", "-vf", "scale=1280:-2", "-q:v", "3"])
+        .arg(&poster_tmp)
+        .status()
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if ok {
+        let _ = tokio::fs::rename(&poster_tmp, public.join("poster.jpg")).await;
+    }
+    let meta = serde_json::json!({
+        "session": session,
+        "segments": raws.len(),
+        "published": SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+    });
+    let _ = tokio::fs::write(public.join("pitch.json"), meta.to_string()).await;
+    Json(serde_json::json!({"ok": true, "video": "/grino/rec/files/public/pitch.mp4", "poster": "/grino/rec/files/public/poster.jpg"})).into_response()
 }
 
 async fn files(dir: &Path, prefix: &str) -> Vec<PathBuf> {
@@ -274,6 +383,7 @@ pub fn routes<S: Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/grino/rec/latest", get(latest))
         .route("/grino/rec/{session}/list", get(list))
         .route("/grino/rec/{session}/build", post(build))
+        .route("/grino/rec/{session}/publish", post(publish))
         .route("/grino/rec/{session}/{seq}", post(upload))
         .layer(DefaultBodyLimit::max(MAX_SEGMENT))
 }

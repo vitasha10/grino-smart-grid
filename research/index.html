@@ -37,6 +37,7 @@
   <ol>
     <li><a href="#short">In short</a></li>
     <li><a href="#deck">The pitch deck</a></li>
+    <li hidden><a href="#recording">The pitch, recorded live</a></li>
     <li><a href="#growth">Solar grew from the roofs</a></li>
     <li><a href="#physics">Why the voltage rises</a></li>
     <li><a href="#data">What the data show</a></li>
@@ -73,6 +74,7 @@
   <ol>
     <li><a href="#short">In short</a></li>
     <li><a href="#deck">The pitch deck</a></li>
+    <li hidden><a href="#recording">The pitch, recorded live</a></li>
     <li><a href="#growth">Solar grew from the roofs</a></li>
     <li><a href="#physics">Why the voltage rises</a></li>
     <li><a href="#data">What the data show</a></li>
@@ -115,6 +117,23 @@
 <p><a class="dl" href="https://grino.vitasha.ru/deck/">Open the presentation</a></p>
 <figure class="img"><img src="assets/deck_preview_s5.png" alt="Pitch deck screen: a 3D village with four lines; lines with SunGuard are green, the line without it shows an emergency shutdown" loading="lazy"><figcaption>Screen 5 of the deck: lines A and B with SunGuard stay at 240 V and the panels keep working; line D without it goes over the limit and its inverters shut down. Model.</figcaption></figure>
 </section>
+
+<section id="recording" hidden>
+<h2>The pitch, recorded live</h2>
+<p>While we were on stage, a phone in the hall filmed the pitch and sent it to our own server four seconds at a time over the venue's Wi-Fi — no YouTube, no cloud storage. Our server made a sped-up copy of every piece as it arrived, and a minute later the last slide played the whole talk at ten times speed. This is the full-length recording.</p>
+<figure class="img"><video id="pitch-video" controls preload="metadata" playsinline poster="https://grino.vitasha.ru/grino/rec/files/public/poster.jpg" src="https://grino.vitasha.ru/grino/rec/files/public/pitch.mp4" style="width:100%;border-radius:10px;background:#000"></video><figcaption>Team #27 Grino, GreenTech Academy Hackathon, Yerevan, October 2026. Filmed on a phone, Full HD, uploaded live.</figcaption></figure>
+</section>
+<script>
+(function () {
+  var v = document.getElementById('pitch-video'), sec = document.getElementById('recording');
+  if (!v || !sec) return;
+  v.addEventListener('loadedmetadata', function () {
+    sec.hidden = false;
+    var toc = document.querySelectorAll('a[href="#recording"]');
+    for (var i = 0; i < toc.length; i++) toc[i].parentNode.hidden = false;
+  });
+})();
+</script>
 
 <section id="growth">
 <h2>Solar grew from the roofs, not from a plan</h2>

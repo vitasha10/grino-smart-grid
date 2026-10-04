@@ -292,6 +292,20 @@
   $('addBox').onclick = function () { R.lines = 2; R.guard = true; send('lines', 2, { discrete: true }); buzz(); };
   $('recBtn').onclick = function () { send('rec', 'on', { discrete: true }); buzz(); };
   $('recOff').onclick = function () { send('rec', 'off', { discrete: true }); buzz(); };
+  /* publish: the server stitches the full-length video of the latest session -> /grino/rec/files/public/pitch.mp4 + poster.jpg */
+  $('recPub').onclick = function () {
+    if (!cfg.KEY) return;
+    if (!window.confirm('Publish the full video of the latest recording to the research site?')) return;
+    var api = (cfg.RELAY_URL || '').replace(/\/+$/, '') + '/rec/', k = '?k=' + encodeURIComponent(cfg.KEY), out = $('recPubV'), btn = $('recPub');
+    btn.disabled = true; out.style.color = 'var(--mut)'; out.textContent = 'publishing… (stitching the full video)'; buzz();
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null, to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 300000);
+    fetch(api + 'latest' + k, { cache: 'no-store' }).then(function (x) { return x.ok ? x.json() : Promise.reject(new Error(x.status === 404 ? 'no recording' : 'HTTP ' + x.status)); })
+      .then(function (j) { return fetch(api + encodeURIComponent(j.session) + '/publish' + k, { method: 'POST', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined }); })
+      .then(function (x) { return x.ok ? x.json().catch(function () { return {}; }) : Promise.reject(new Error('HTTP ' + x.status)); })
+      .then(function (j) { out.style.color = 'var(--ok2)'; out.textContent = 'published ✓' + (j && (j.url || j.pitch) ? ' · ' + String(j.url || j.pitch).replace(/^https?:\/\/[^/]+/, '') : ''); })
+      .catch(function (e) { out.style.color = 'var(--red)'; out.textContent = 'not published: ' + (e && e.name === 'AbortError' ? 'timeout' : (e && e.message || e)); })
+      .then(function () { clearTimeout(to); btn.disabled = false; });
+  };
   $('tapBtn').onclick = function () { R.lines = 3; R.guard = true; send('lines', 3, { discrete: true }); buzz(); };
   function stepSend(v) { send('step', v, { discrete: true }); buzz(); }
   $('stepPrev').onclick = function () { if (R.step) R.step.k = Math.max(0, R.step.k - 1); stepSend({ d: -1 }); render(); };
@@ -392,7 +406,7 @@
     $('pGuard').style.order = sc.guard ? '-1' : '';          /* S5: SunGuard buttons right under Next, the sun strip below them */
     $('pCalc').classList.toggle('on', !!sc.calc);
     $('pRec').classList.toggle('on', sc.id === 's11');
-    var rs = d && d.caps && d.caps.rec; $('recV').textContent = rs === 'building' ? 'building on the server…' : rs === 'playing' ? 'playing on the deck' : rs === 'none' ? 'no recording yet' : '—';
+    var rs = d && d.caps && d.caps.rec; $('recV').textContent = rs === 'building' ? 'building on the server…' : rs === 'playing' ? 'playing on the deck' : rs === 'ready' ? 'ready (hidden)' : rs === 'none' ? 'no recording yet' : 'shows by itself on this slide';
     $('sunStrip').classList.toggle('off', R.rl);
     $('pvSlider').classList.toggle('off', R.rl);
     paintStrip(R.sun, d && typeof d.sun === 'number' ? d.sun : null);

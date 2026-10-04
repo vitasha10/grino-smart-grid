@@ -135,11 +135,11 @@
   var cur = null, rotT = 0, pendingStops = 0;
   function newRecorder() {
     var opts = { videoBitsPerSecond: 6000000, audioBitsPerSecond: 96000 }; if (REC.mime) opts.mimeType = REC.mime;
-    var r = new MediaRecorder(output, opts), run = { r: r, chunks: [], seq: REC.seq++, t0: performance.now(), startedAt: Date.now() };
+    var r = new MediaRecorder(output, opts), run = { r: r, chunks: [], seq: REC.seq++, session: REC.session, t0: performance.now(), startedAt: Date.now() };
     r.ondataavailable = function (e) { if (e.data && e.data.size) run.chunks.push(e.data); };
     r.onstop = function () { pendingStops--; finish(run); };
     r.onerror = function () { msg('Recorder error — continuing with the next segment', 'bad'); };
-    r.start(); pendingStops++;
+    r.start(); pendingStops++; saveSess();
     return run;
   }
   function finish(run) {
@@ -149,7 +149,7 @@
     var blob = new Blob(run.chunks, { type: ext === 'mp4' ? 'video/mp4' : 'video/webm' });
     if (blob.size < 1024) return;
     REC.recorded++; REC.ext = ext;
-    var p = { id: REC.session + ':' + run.seq, session: REC.session, seq: run.seq, ext: ext, blob: blob, durationMs: Math.round(performance.now() - run.t0), createdAt: Date.now(), attempts: 0, nextTryAt: 0 };
+    var p = { id: run.session + ':' + run.seq, session: run.session, seq: run.seq, ext: ext, blob: blob, durationMs: Math.round(performance.now() - run.t0), createdAt: Date.now(), attempts: 0, nextTryAt: 0 };
     qPut(p).then(function () { render(); pump(); });
   }
   function rotate() {
@@ -167,16 +167,22 @@
   function wakeLock() { try { if ('wakeLock' in navigator && !wake) navigator.wakeLock.request('screen').then(function (w) { wake = w; w.addEventListener('release', function () { wake = null; }); }).catch(function () {}); } catch (e) {} }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && REC.on) wakeLock(); });
 
-  function start() {
+  /* the current session survives Record / Stop / a reload; only "New recording" starts a new one (the deck shows the newest) */
+  var SK = 'grino27_rec_session';
+  function loadSess() { try { var s = JSON.parse(localStorage.getItem(SK) || 'null'); if (s && /^[a-f0-9]{16}$/.test(s.session)) return s; } catch (e) {} return null; }
+  function saveSess() { try { localStorage.setItem(SK, JSON.stringify({ session: REC.session, next: REC.seq })); } catch (e) {} }
+  var saved = loadSess(); if (saved) { REC.session = saved.session; REC.seq = saved.next || 0; }
+  function start(fresh) {
     if (!vTrack) return;
     REC.mime = pickMime();
     if (REC.mime === null) { msg('This browser cannot record video (no MediaRecorder)', 'bad'); return; }
-    REC.session = hex(8); REC.seq = 0; REC.recorded = 0; REC.uploaded = 0; REC.on = true;
+    if (fresh || !REC.session) { REC.session = hex(8); REC.seq = 0; REC.recorded = 0; REC.uploaded = 0; REC.server = 0; }
+    REC.on = true; saveSess(); render();
     output = buildOutput();
     try { cur = newRecorder(); } catch (e) { REC.on = false; msg('Recorder did not start: ' + (e && e.message || e), 'bad'); return; }
     rotT = setInterval(rotate, SEGMENT_MS);
     wakeLock();
-    $('go').textContent = '■ Stop'; $('go').classList.add('stop');
+    $('go').textContent = '■ Stop'; $('go').classList.add('stop'); $('go').disabled = false;
     $('badge').textContent = 'REC · ' + (REC.mime || 'auto') .replace(/;.*/, '') + ' · ' + REC.mode; $('badge').classList.add('rec');
     msg('Recording · session ' + REC.session.slice(0, 6) + '…', 'ok');
   }
@@ -194,16 +200,28 @@
         msg('Building the replay on the server…');
         fetch(API + '/' + encodeURIComponent(session) + '/build?k=' + encodeURIComponent(KEY), { method: 'POST', cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
-          .then(function (j) { REC.built = j; msg('Ready: ' + REC.recorded + ' segments · replay ' + (j && j.fast ? '×10 ready' : 'full only'), 'ok'); })
+          .then(function (j) { REC.built = j; msg('Uploaded: ' + REC.recorded + ' segments · ' + (j && typeof j.fast === 'string' && j.fast ? 'replay ×10 ready' : 'the deck builds the replay on s10b'), 'ok'); })
           .catch(function (e) { msg('Build failed (' + (e && e.message || e) + ') — the deck can build it again', 'bad'); })
           .then(function () { if (canvas) { clearInterval(drawT); canvas = null; } if (srcVideo) { srcVideo.remove(); srcVideo = null; } $('go').disabled = false; $('go').textContent = '● Record'; $('go').classList.remove('stop'); render(); });
       });
     })();
   }
-  $('go').onclick = function () { if (REC.on) stop(); else start(); };
+  $('go').onclick = function () { if (REC.on) stop(); else start(false); };
+  $('newRec').onclick = function () {
+    if (!window.confirm('Start a NEW recording?\n\nThe deck will show the new one (the previous recording stays on the server).')) return;
+    if (REC.on) { REC.on = false; clearInterval(rotT); var last = cur; cur = null; try { if (last && last.r.state !== 'inactive') last.r.stop(); } catch (e) {} }
+    start(true); msg('New recording · session ' + REC.session.slice(0, 6) + '…', 'ok');
+  };
+  /* segments the server has for the current session */
+  setInterval(function () {
+    if (!REC.session || !(REC.uploaded > 0 || REC.server > 0)) return;   /* nothing uploaded yet -> the server has no list (404) */
+    fetch(API + '/' + REC.session + '/list?k=' + encodeURIComponent(KEY), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (x) { if (x && x.segments) { REC.server = x.segments.length; render(); } }).catch(function () {});
+  }, 4000);
 
   function render() {
     $('nRec').textContent = REC.recorded; $('nUp').textContent = REC.uploaded; $('nQ').textContent = queued;
+    $('sess').innerHTML = REC.session ? 'session <b>' + REC.session.slice(0, 6) + '…</b> · on the server: <b>' + (REC.server != null ? REC.server : '…') + '</b> segments' + (REC.on ? ' · recording' : '') : 'session: — (Record starts one)';
   }
   setInterval(render, 500);
 

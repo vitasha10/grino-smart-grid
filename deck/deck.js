@@ -598,6 +598,7 @@
     if (id === 's6') buildMap();
     if (id === 's8') { buildBox(); enterParts(); } else stopParts();
     if (id === 's11') buildQR();
+    recEnter(id);
     if (id === 's10b' && !$('#qrGit').firstChild) makeQR($('#qrGit'), 'https://github.com/vitasha10/grino-smart-grid', 300);
     if (id === 's7') { loadCalc(); if (!S7D) computeS7(); }
     else { body.classList.remove('calc-in'); if (document.activeElement === frame) { frame.blur(); window.focus(); } }
@@ -872,36 +873,86 @@
     opts = opts || {}; opts.cache = 'no-store'; if (ctrl) opts.signal = ctrl.signal;
     return fetch(url, opts).then(function (r) { clearTimeout(t); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }, function (e) { clearTimeout(t); throw e; });
   }
-  function recShow(on) { body.classList.toggle('rec-on', !!on); $('#recPanel').hidden = !on; }
-  function recPlay() {
-    if (!cfg.KEY || RECV.busy) return;
-    RECV.busy = true; RECV.state = 'building'; publishState();
-    var v = $('#recVideo');
-    recFetch(recApi('latest'), null, 15000).then(function (j) {
+  /* v11 (team lead): the build starts ONCE on s10b (background); s11 shows exactly that result — the fast copy, muted,
+     looped, animated in above the QR — and waits for that same request if it is still running. No second build, no polling.
+     Straight to s11 without a pre-build -> one build then. A new build only on the next pass through s10b.
+     Reset all does not touch it. Overrides: remote "▶ Recording" / "Hide", Shift+V. No session -> the panel stays hidden. */
+  var RB = { p: null, info: null, pass: 0 };
+  function recShow(on) { body.classList.toggle('rec-on', !!on); $('#recPanel').setAttribute('aria-hidden', on ? 'false' : 'true'); }
+  function str(u) { return typeof u === 'string' && u.length > 1 ? u : ''; }
+  function recBuildOnce() {   /* one logical build: retries only while the server's fast copies are still pending */
+    if (!cfg.KEY) return Promise.reject(new Error('no key'));
+    return recFetch(recApi('latest'), null, 15000).then(function (j) {
       if (!j || !j.session) throw new Error('no recording');
-      RECV.session = j.session;
-      return recFetch(recApi(encodeURIComponent(j.session) + '/build'), { method: 'POST' }, 90000).catch(function () { return j; });
-    }).then(function (b) {
-      var fast = b && (b.fast || b.fast_full), full = b && b.full;
-      if (!fast && !full) throw new Error('nothing built');
-      RECV.url = recAbs(fast || full); RECV.rate = fast ? 1 : 10;
-      return new Promise(function (res, rej) {
-        var done = false, to = setTimeout(function () { if (!done) { done = true; rej(new Error('video did not load')); } }, 20000);
-        v.onloadeddata = function () { if (done) return; done = true; clearTimeout(to); res(); };
-        v.onerror = function () { if (done) return; done = true; clearTimeout(to); rej(new Error('video error')); };
-        v.src = RECV.url; v.muted = true; v.loop = true; v.playbackRate = RECV.rate; v.defaultPlaybackRate = RECV.rate;
-        try { v.load(); } catch (e) {}
-      });
-    }).then(function () {
-      v.playbackRate = RECV.rate;
-      var p = v.play(); if (p && p.catch) p.catch(function () {});
-      recShow(true); RECV.state = 'playing';
-    }).catch(function (e) {
-      recShow(false); RECV.state = 'none'; RECV.err = String(e && e.message || e);
-      console.info('[deck] recording:', RECV.err);
-    }).then(function () { RECV.busy = false; publishState(); });
+      var s = encodeURIComponent(j.session), tries = 0;
+      function attempt() {
+        return recFetch(recApi(s + '/build'), { method: 'POST' }, 30000).then(function (b) {
+          var fast = str(b && b.fast) || str(j.fast), webm = str(b && b.fast_webm) || str(j.fast_webm);
+          if (fast || webm) {
+            /* MP4 (H.264) first, then VP8 WebM (stage laptop may lack H.264). ?recfmt=webm forces WebM, ?recfmt=fail tests the hide path */
+            var srcs = [fast, webm].filter(Boolean), fm = (new URLSearchParams(location.search).get('recfmt') || '').toLowerCase();
+            if (fm === 'webm' && webm) srcs = [webm];
+            if (fm === 'fail') srcs = srcs.map(function (u) { return u.replace(/\.(mp4|webm)$/, '.missing.$1'); });
+            return { urls: srcs.map(recAbs), rate: 1, session: j.session, n: (b.segments && b.segments.length) || b.segments || 0, t: Date.now() };
+          }
+          if (++tries < 3) return new Promise(function (r) { setTimeout(r, 1000); }).then(attempt);   /* copies still pending: ~3 s each */
+          /* no fast copy at all: the full-length file at x10 (server stitches it only with ?full=1) */
+          return recFetch(recApi(s + '/build?full=1'), { method: 'POST' }, 90000).then(function (f) {
+            var full = str(f && f.full); if (!full) throw new Error('nothing built');
+            return { urls: [recAbs(full)], rate: 10, session: j.session, n: 0, t: Date.now() };
+          });
+        });
+      }
+      return attempt();
+    }).then(function (info) {   /* preload: each source must reach 'playing' within 3 s (error / timeout -> next source) */
+      function tryOne(k) {
+        if (k >= info.urls.length) return Promise.reject(new Error('no playable recording'));
+        return new Promise(function (res, rej) {
+          var nv = document.createElement('video'), done = false;
+          nv.muted = true; nv.loop = true; nv.playsInline = true; nv.setAttribute('playsinline', ''); nv.setAttribute('muted', ''); nv.preload = 'auto';
+          var fail = function () { if (done) return; done = true; clearTimeout(to); try { nv.removeAttribute('src'); nv.load(); } catch (e) {} rej(); };
+          var to = setTimeout(fail, 3000);
+          nv.onplaying = function () {
+            if (done) return; done = true; clearTimeout(to);
+            var old = $('#recVideo'); nv.id = 'recVideo';
+            old.parentNode.replaceChild(nv, old); try { old.pause(); old.removeAttribute('src'); old.load(); } catch (e) {}
+            nv.playbackRate = info.rate; nv.defaultPlaybackRate = info.rate;
+            info.url = info.urls[k]; info.fmt = /\.webm(\?|$)/.test(info.urls[k]) ? 'webm' : 'mp4';
+            res(info);
+          };
+          nv.onerror = fail;
+          nv.playbackRate = info.rate; nv.defaultPlaybackRate = info.rate;
+          nv.src = info.urls[k] + (info.urls[k].indexOf('?') >= 0 ? '&' : '?') + 't=' + info.t;
+          try { nv.load(); var q = nv.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+        }).catch(function () { return tryOne(k + 1); });
+      }
+      return tryOne(0);
+    });
   }
-  function recHide() { var v = $('#recVideo'); try { v.pause(); } catch (e) {} recShow(false); RECV.state = 'idle'; publishState(); }
+  function recStart() {   /* a new pass: one build, kept until the next s10b */
+    var pass = ++RB.pass; RB.failed = false;
+    RECV.state = 'building'; publishState();
+    RB.p = recBuildOnce().then(function (info) { if (pass === RB.pass) { RB.info = info; RECV.session = info.session; RECV.n = info.n; RECV.rate = info.rate; RECV.url = info.url; RECV.fmt = info.fmt; RECV.ready = true; } return info; });
+    RB.p.then(function () { if (!body.classList.contains('rec-on')) RECV.state = 'ready'; publishState(); },
+              function (e) { RECV.err = String(e && e.message || e); if (pass === RB.pass) { RB.info = null; RB.failed = true; if (!RECV.ready) RECV.state = 'none'; } console.info('[deck] recording:', RECV.err); publishState(); });
+    return RB.p;
+  }
+  function recShowWhenReady() {
+    var p = RB.p && !RB.failed ? RB.p : recStart();   /* a failed pre-build may be retried once here */
+    p.then(function () {
+      if (ids[state.i] !== 's11' || RECV.userHidden || !RECV.ready) return;
+      var v = $('#recVideo'); try { var q = v.play(); if (q && q.catch) q.catch(function () {}); } catch (e) {}
+      recShow(true); RECV.state = 'playing'; publishState();
+    }, function () { if (!RECV.ready) recShow(false); });
+  }
+  function recEnter(id) {
+    if (!cfg.KEY) return;
+    if (id === 's10b') recStart();
+    if (id === 's11') { RECV.userHidden = false; recShowWhenReady(); }
+    else if (body.classList.contains('rec-on')) { recShow(false); if (RECV.ready) RECV.state = 'ready'; try { $('#recVideo').pause(); } catch (e) {} }
+  }
+  function recPlay() { if (!cfg.KEY) return; RECV.userHidden = false; recShowWhenReady(); }
+  function recHide() { RECV.userHidden = true; recShow(false); RECV.state = RECV.ready ? 'ready' : 'idle'; publishState(); }
 
   /* ---------------- keyboard ---------------- */
   function onKey(e) {
@@ -993,7 +1044,7 @@
   }
   function snapshot() {
     var stepInfo = { k: STEP.k, n: STEP.n };
-    var caps = { orbit: !!(window.Street && typeof Street.orbitBy === 'function'), autoRotate: !!(window.Street && typeof Street.setAutoRotate === 'function') ? (state.autoRotate !== false) : null, lines: hasLinesApi(), addBox: !!(window.Street && typeof Street.addBox === 'function'), renderer: window.DECK.renderer || '2d', sun242: sun242(), rec: RECV.state };
+    var caps = { orbit: !!(window.Street && typeof Street.orbitBy === 'function'), autoRotate: !!(window.Street && typeof Street.setAutoRotate === 'function') ? (state.autoRotate !== false) : null, lines: hasLinesApi(), addBox: !!(window.Street && typeof Street.addBox === 'function'), renderer: window.DECK.renderer || '2d', sun242: sun242(), rec: RECV.state, recSession: RECV.session || null };
     return { screen: state.i, id: ids[state.i], step: stepInfo, sun: Math.round(state.sun * 100) / 100, guard: state.lines > 0, lines: state.lines, boxes: state.lines * 3, caps: caps, resets: window.DECK.resets || 0, auto: AP.on, qr: state.qr, black: state.black,
       calc: ids[state.i] === 's7' ? calcState() : { avail: !!calcDoc() } };
   }
