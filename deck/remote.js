@@ -19,7 +19,7 @@
   function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
   function mmss(s) { var neg = s < 0; s = Math.abs(Math.round(s)); return (neg ? '-' : '') + Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
 
-  /* ---------- message budget (ntfy.sh: 250 / day / IP, reset 00:00 UTC) ---------- */
+  /* ---------- sent-message counter (shown in the footer) ---------- */
   var dayKey = 'grino_sent_' + new Date().toISOString().slice(0, 10) + '_' + cfg.TOPIC;
   function bumpCount() { R.sentRun++; try { localStorage.setItem(dayKey, String((+localStorage.getItem(dayKey) || 0) + 1)); } catch (e) {} }
   function dayCount() { try { return +localStorage.getItem(dayKey) || 0; } catch (e) { return 0; } }
@@ -353,10 +353,10 @@
     else if (rtts.length) { var ss = rtts.slice().sort(function (a, b) { return a - b; }); med = ss[Math.floor(ss.length / 2)]; }
     var p2pNote = p2p && !viaP2P() && p2p.state() === 'connecting' ? ' (P2P…)' : '';
     var tl = (kindNow === 'p2p' ? 'P2P' : kindNow === 'relay' ? 'relay' + p2pNote : kindNow === 'ntfy' ? 'ntfy' + (tr.fellBack() ? ' (fallback)' : '') : kindNow) + (med != null ? ' · rtt ' + (med < 1000 ? med + ' ms' : (med / 1000).toFixed(1) + ' s') : '');
-    c.className = 'conn ' + cls; $('connT').textContent = t + ' · ' + tl; $('connS').textContent = s;
+    c.className = 'conn ' + cls; $('connT').textContent = cfg.TOPIC ? t + ' · ' + tl : t; $('connS').textContent = s;
 
     var w = $('warn');
-    if (R.rl) { w.className = 'warn on'; w.textContent = '⚠ ntfy.sh rate limit (HTTP 429). Sun / solar sliders are paused; screen changes, toggles and "Sweep" still go through. Back to normal in ' + Math.ceil((R.rlUntil - now) / 1000) + ' s. Keyboard on the laptop always works.'; }
+    if (R.rl) { w.className = 'warn on'; w.textContent = '⚠ Relay rate limit (HTTP 429). Sun / solar sliders are paused; screen changes and toggles still go through. Back to normal in ' + Math.ceil((R.rlUntil - now) / 1000) + ' s. Keyboard on the laptop always works.'; }
     else if (!cfg.TOPIC) { w.className = 'warn on'; w.textContent = 'Open the link from the team chat — this remote has no link key and is not connected.'; }
     else if (!R.open && R.tstate !== 'connecting') { w.className = 'warn on'; w.textContent = '⚠ No connection to the relay. Use the laptop keyboard / clicker meanwhile.'; }
     else if (tr && tr.fellBack()) { w.className = 'warn on'; w.style.background = 'rgba(245,165,36,.14)'; w.style.borderColor = 'rgba(245,165,36,.6)'; w.style.color = '#FFD9A0'; w.textContent = 'Relay WebSocket unreachable — using SSE / long-poll on the same relay.'; }
@@ -441,7 +441,7 @@
     /* footer */
     var kind = kindNow;
     $('foot').innerHTML = 'Transport: <b>' + (kind === 'p2p' ? 'P2P (WebRTC, direct) + relay ' + esc(cfg.RELAY_URL) + ' as fallback' : kind === 'relay' ? 'own relay · ' + esc(cfg.RELAY_URL) : 'not connected') + '</b> · remote id ' + sid +
-      '<br>This session: ' + R.sentRun + ' sent, ' + R.acksRun + ' acks received' + (kind === 'ntfy' ? ' · sent today from this phone: <b>' + dayCount() + '</b><br>ntfy.sh allows 250 messages / day per IP (phone + laptop share it on one Wi-Fi; reset 04:00 Yerevan) and 60 requests, then 1 per 5 s.' : '');
+      '<br>This session: ' + R.sentRun + ' sent, ' + R.acksRun + ' acks received' + '';
   }
   function $$(s) { return Array.prototype.slice.call(document.querySelectorAll(s)); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }

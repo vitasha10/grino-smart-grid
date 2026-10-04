@@ -19,7 +19,7 @@
   /* the relay is used only with a topic from ?k= (no public fallbacks) */
   function relayOn() { return !!cfg.RELAY_URL && !!cfg.TOPIC; }
 
-  /* ---------- SSE backend (ntfy.sh and the relay share the wire format) ---------- */
+  /* ---------- SSE backend (the relay speaks the ntfy wire format) ---------- */
   function SseBackend(kind, base, opts) {
     base = base.replace(/\/+$/, '');
     var subUrl = base + '/' + encodeURIComponent((cfg.TOPIC + '-' + opts.listen).toLowerCase()) + '/sse';
@@ -54,7 +54,7 @@
     }
     function markOpen() {
       if (!openedThis) { openedThis = true; retry = 0; failsInRow = 0; }
-      status('open', kind === 'ntfy' ? 'ntfy.sh' : base);
+      status('open', base);
     }
     function open() {
       if (closed) return;
@@ -93,7 +93,7 @@
     open();
     return {
       kind: kind,
-      describe: function () { return (kind === 'ntfy' ? 'ntfy.sh' : kind + ' ' + base.replace(/^https?:\/\//, '')); },
+      describe: function () { return kind + ' ' + base.replace(/^https?:\/\//, ''); },
       send: function (obj) {
         var body = JSON.stringify(obj);
         /* text/plain body -> "simple" CORS request, no preflight */

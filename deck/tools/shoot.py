@@ -5,14 +5,14 @@ Uses headless Edge/Chrome over CDP (tools/cdp.py). Runs on the TEST topic, sends
     python tools/shoot.py deck       # deck only
     set DECK_BASE=http://127.0.0.1:8027 & python tools/shoot.py deck3d   # 3D street (needs http, see README)
 """
-import os, sys, json
+import os, secrets, sys, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cdp import Browser
 
 DECK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(DECK, "screens")
 URL = os.environ.get("DECK_BASE") or ("file:///" + DECK.replace("\\", "/"))
-Q = "?topic=grino27-da9f68d2021e3d49-test&relay=off"   # no relay / no messages needed for pictures
+Q = "?"   # no link key: the deck runs locally, no relay needed for pictures
 
 
 def deck(sizes=((1920, 1080), (1366, 768)), tag="deck", only=None):
@@ -59,7 +59,7 @@ def deck(sizes=((1920, 1080), (1366, 768)), tag="deck", only=None):
 
 def remote():
     """remote + a live deck on the test topic over the relay, so the indicator shows a real ack"""
-    q = "?topic=grino27-da9f68d2021e3d49-test"
+    q = "?k=shoot" + secrets.token_hex(6)   # throwaway test key (the real key is never in files)
     d = Browser(port=9343)
     b = Browser(port=9342)
     errs = []

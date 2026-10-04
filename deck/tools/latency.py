@@ -5,7 +5,8 @@ Touches the remote's sun strip: 16 taps, 6 flicks dawn<->noon, 3 slow drags; pri
 import sys, os, json, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cdp import Browser
-TOPIC = 'grino27-da9f68d2021e3d49-test'
+import secrets
+TOPIC = 'lat' + secrets.token_hex(6)   # throwaway test key
 Q = sys.argv[1] if len(sys.argv) > 1 else ''
 DBG = '--dbg' in sys.argv
 if Q == '--dbg': Q = ''
@@ -26,8 +27,8 @@ def touch(kind, x=0, y=0):
 def pct(a, p):
     a = sorted(a); return a[min(len(a) - 1, int(round(p / 100.0 * (len(a) - 1))))] if a else None
 try:
-    d.viewport(1280, 720); d.goto('http://127.0.0.1:8027/index.html?topic=' + TOPIC + Q + '#s1', 3)
-    r.viewport(390, 844, scale=2, mobile=True); r.goto('http://127.0.0.1:8027/remote.html?topic=' + TOPIC, 1)
+    d.viewport(1280, 720); d.goto('http://127.0.0.1:8027/index.html?k=' + TOPIC + Q + '#s1', 3)
+    r.viewport(390, 844, scale=2, mobile=True); r.goto('http://127.0.0.1:8027/remote.html?k=' + TOPIC, 1)
     print('linked:', wait(lambda: 'ok' in r.js("document.getElementById('conn').className"), 30), '|', r.js('REMOTE.transport.describe()'))
     r.js("document.querySelectorAll('#list button')[1].click()"); wait(lambda: d.js('DECK.state.i') == 1, 10); both(2.5)
     print('deck renderer:', d.js('DECK.renderer'), '| caps.sun242 on remote:', r.js('REMOTE.R.caps && REMOTE.R.caps.sun242'))

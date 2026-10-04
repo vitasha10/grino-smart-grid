@@ -112,6 +112,7 @@
     for (var j = past.children.length; j < k - 1; j++) {
       var sh = (beats[j].dataset.short || '|').split('|'), pi = document.createElement('div');
       pi.className = 'pi'; pi.innerHTML = '<b></b><span></span>'; pi.firstChild.textContent = sh[0]; pi.lastChild.textContent = sh[1];
+      if (sh[2]) { var em = document.createElement('em'); em.textContent = sh[2]; pi.appendChild(em); }   /* S3: the regulator line stays visible */
       past.appendChild(pi);
       (function (pi) { requestAnimationFrame(function () { requestAnimationFrame(function () { pi.classList.add('on'); }); }); })(pi);
     }
@@ -183,7 +184,7 @@
       var p = document.createElementNS(NS, 'path');
       p.setAttribute('d', s.d); p.setAttribute('class', 'marz'); p.setAttribute('fill', col(r.per10k));
       p.style.transitionDelay = (0.2 + i * 0.06) + 's';
-      var tt = document.createElementNS(NS, 'title'); tt.textContent = s.name + ': ' + r.per10k + ' problem lines per 10,000 customers, ' + fmtInt(r.lines) + ' lines'; p.appendChild(tt);
+      var tt = document.createElementNS(NS, 'title'); tt.textContent = s.name + ': ' + Number(r.per10k).toFixed(1) + ' problem lines per 10,000 customers, ' + fmtInt(r.lines) + ' lines'; p.appendChild(tt);
       gShapes.appendChild(p);
       var off = OFF[s.name] || [0, 0], lx = s.cx + off[0], ly = s.cy + off[1];
       if (s.name === 'Yerevan') {
@@ -193,7 +194,7 @@
         var dot = document.createElementNS(NS, 'circle'); dot.setAttribute('cx', s.cx); dot.setAttribute('cy', s.cy); dot.setAttribute('r', 8); dot.setAttribute('fill', '#FFE3A3'); gLab.appendChild(dot);
       }
       txt('mz-name', lx, ly - 34, s.name);
-      txt('mz-big', lx, ly + 12, String(r.per10k));
+      txt('mz-big', lx, ly + 12, Number(r.per10k).toFixed(1));
       txt('mz-small', lx, ly + 40, fmtInt(r.lines) + ' lines');
     });
   }
@@ -735,7 +736,8 @@
     var dynImport; try { dynImport = new Function('u', 'return import(u)'); } catch (e) { window.Street3DFailed = true; return; }
     dynImport('./street3d.js').then(function (m) {
       if (!m || typeof m.upgrade !== 'function') throw new Error('street3d.js has no upgrade()');
-      return m.upgrade($('#street'), { active: isScene(ids[state.i]) });
+      /* stage-px areas where 3D labels must not go: title + S5 points, S5 stage caption, line-D caption, source line, partner plate */
+      return m.upgrade($('#street'), { active: isScene(ids[state.i]), keepOut: [[0, 0, 1920, 306], [560, 306, 1360, 374], [360, 866, 1560, 934], [40, 940, 1880, 992], [0, 985, 1920, 1080], [1560, 0, 1920, 160]] });
     }).then(function (done) {
       if (done && Street.is3D && !window.Street3DFailed) { window.DECK.renderer = '3d'; body.classList.add('r3d'); reapplyStreet(); }
       else { window.DECK.renderer = '2d (3D declined)'; trySnap(); }

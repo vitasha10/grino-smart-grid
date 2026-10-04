@@ -79,13 +79,8 @@ window.GRINO = {
   /* S3 month bars (OVERVOLTAGE_PCT, PSRC data) are hidden in v1 by the team's decision; true = show them */
   S3_SHOW_BARS: false,
 
-  /* ntfy.sh public limits (docs.ntfy.sh/publish/#limitations): 60-request burst, then 1 request / 5 s,
-     and 250 messages / day per IP (reset 00:00 UTC = 04:00 Yerevan). The deck smooths the sun between
-     samples, so a slow send rate still looks continuous. The relay has no rate limit. */
-  SUN_HZ_NTFY: 0.6,
   SUN_HZ_RELAY: 30,          /* v8: sun targets at <= 30 Hz over the relay WebSocket, latest value wins */
   /* deck acks: first ack immediately, then at most one per interval (latest seq wins) */
-  ACK_MIN_INTERVAL_NTFY_MS: 2000,
   ACK_MIN_INTERVAL_RELAY_MS: 200,
   ACK_TIMEOUT_MS: 3500,
 

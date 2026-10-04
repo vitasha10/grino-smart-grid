@@ -14,7 +14,7 @@ Use ONLY these numbers in visuals. Mark model results as "model" and assumptions
 | F7 | Feeders always high (Dec night > +10%) — "tap-type" | 1,770 | same |
 | F8 | Feeders < −10% in Dec evening — "overload-type" | 743 | same |
 | F9 | Per 10,000 customers (strict) | Shirak 39.6 (350 lines), Yerevan 36.9 (1,528), Armavir 27.1 (232), Vayots Dzor 17.1, Kotayk 16.9, Ararat 12.5, Aragatsotn 9.3, Lori 6.3, Tavush 5.2, Syunik 2.4, Gegharkunik 1.0 | same; customers PSRC 2025 |
-| F10 | Appliance-damage claims to ENA, 2025 | 3,913 of 15,453 complaints (≈ 25%) | PSRC quarterly complaint reports on ENA (HEC 1–4 2025, column "repair/compensation of appliances due to low quality") |
+| F10 | Appliance-damage claims to ENA, 2025 | 3,913 complaints, ≈ 25% of all (total 15,436–15,453 depending on the summation of the quarterly files) | PSRC quarterly complaint reports on ENA (HEC 1–4 2025, column "repair/compensation of appliances due to low quality") |
 | F11 | Legal voltage limits | 220 V ± 10% → 198–242 V | GOST 32144-2013 (in force in RA since 01.06.2015) |
 | F12 | Inverter trip | 10-min mean > 253 V (230 V + 10%), ≤ 3 s; reconnect after 60 s | EN 50549-1 default settings (inverter test reports) |
 | F13 | Model: solar-heavy village feeder (AL 50, 1 km), clear June day | max 252 V as is; SunGuard throttling alone keeps ≤ 242 V but −32% of the day's solar; tap change + volt-var: ≤ 242 V, 0 solar lost | Own pandapower model (illustrative) |
